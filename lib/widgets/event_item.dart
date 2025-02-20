@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 class EventItem extends StatelessWidget {
   final CalendarEvent event;
 
-  EventItem({required this.event});
+  const EventItem({super.key, required this.event});
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +31,7 @@ class EventItem extends StatelessWidget {
           Text(
             '${DateFormat('HH:mm').format(event.startTime)} - ${DateFormat('HH:mm').format(event.endTime)}',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withAlpha((0.8 * 255).toInt()),
               fontSize: 10,
             ),
           ),
