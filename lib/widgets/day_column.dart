@@ -7,7 +7,8 @@ class DayColumn extends StatelessWidget {
   final DateTime date;
   final List<CalendarEvent> events;
 
-  DayColumn({
+  const DayColumn({
+    super.key,
     required this.date,
     required this.events,
   });
@@ -17,7 +18,7 @@ class DayColumn extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         border: Border(
-          left: BorderSide(color: Colors.grey.withOpacity(0.2)),
+          left: BorderSide(color: Colors.grey.withAlpha((0.2 * 255).toInt())),
         ),
       ),
       child: ListView.builder(
