@@ -10,6 +10,8 @@ class WeekView extends StatelessWidget {
   static const double HOUR_HEIGHT = 60.0;
   static const double TOTAL_HEIGHT = HOUR_HEIGHT * 24;
   static const double TIME_COLUMN_WIDTH = 50.0;
+  static const double VERTICAL_LINE_WIDTH = 1.0;
+static const double TODAY_LINE_WIDTH = 2.0;
 
   const WeekView({
     super.key,
@@ -47,21 +49,19 @@ class WeekView extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final dayWidth = (screenWidth - TIME_COLUMN_WIDTH) / 7;
 
+    final todayIndex = weekDays.indexWhere((date) =>
+      date.year == now.year &&
+      date.month == now.month &&
+      date.day == now.day
+      );
+    
     return Stack(
       children: [
         // 时间轴背景网格
         Column(
           children: List.generate(24, (hour) {
-            return Container(
+            return SizedBox(
               height: HOUR_HEIGHT,
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: ThemeConstants.gridLineColor,
-                    width: ThemeConstants.gridLineWidth,
-                  ),
-                ),
-              ),
               child: Row(
                 children: [
                   // 时间列
@@ -78,26 +78,30 @@ class WeekView extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // 每小时的横向网格线
-                  ...List.generate(7, (index) => 
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border(
-                            left: BorderSide(
-                              color: ThemeConstants.gridLineColor,
-                              width: ThemeConstants.gridLineWidth,
-                            ),
+                  Expanded(
+                    child: Stack(
+                      children: List.generate(8, (index) {
+                        // 计算是否是今天，若是加粗两条分割线
+                        final shouldBeBold = index == todayIndex || index == todayIndex + 1;
+                        
+                        return Positioned(
+                          left: dayWidth * index,
+                          top: 0,
+                          bottom: 0,
+                          child: Container(
+                            width: shouldBeBold ? TODAY_LINE_WIDTH : VERTICAL_LINE_WIDTH,
+                            color: ThemeConstants.gridLineColor,
                           ),
-                        ),
-                      ),
+                        );
+                      }),
                     ),
                   ),
-                ],
+                ]
               ),
             );
           }),
         ),
+        
 
         // 事件层
         ...events.map((event) {

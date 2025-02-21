@@ -15,16 +15,16 @@ class ThemeConstants {
     return TextStyle(
       color: pastColor,
       fontSize: 14,
-      fontFamily: 'Arial',
+      fontFamily: 'NotoSansSC',
     );
   }
   
   static TextStyle getCurrentTextStyle() {
     return TextStyle(
       color: currentColor,
-      fontSize: 14,
+      fontSize: 15,
       fontWeight: FontWeight.bold,
-      fontFamily: 'Arial',
+      fontFamily: 'NotoSansSC',
     );
   }
   
@@ -32,7 +32,7 @@ class ThemeConstants {
     return TextStyle(
       color: upcomingColor,
       fontSize: 14,
-      fontFamily: 'Arial',
+      fontFamily: 'NotoSansSC',
     );
   }
 }
