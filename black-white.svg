@@ -1,0 +1,165 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+
+  <!-- Background -->
+
+  <rect width="800" height="600" fill="white"/>
+
+  
+
+  <!-- Grid Lines -->
+
+  <g id="grid-lines">
+
+    <line x1="114" y1="80" x2="114" y2="400" stroke="#E0E0E0" stroke-width="1"/>
+
+    <line x1="228" y1="80" x2="228" y2="400" stroke="#E0E0E0" stroke-width="1"/>
+
+    <line x1="342" y1="80" x2="342" y2="400" stroke="#E0E0E0" stroke-width="1"/>
+
+    <line x1="456" y1="80" x2="456" y2="400" stroke="#E0E0E0" stroke-width="1"/>
+
+    <line x1="570" y1="80" x2="570" y2="400" stroke="#E0E0E0" stroke-width="1"/>
+
+    <line x1="684" y1="80" x2="684" y2="400" stroke="#E0E0E0" stroke-width="1"/>
+
+  </g>
+
+  <!-- Days of the Week -->
+
+  <g id="weekdays" font-family="Arial, sans-serif">
+
+    <!-- Past days (lighter) -->
+
+    <text x="57" y="50" fill="#AAAAAA" text-anchor="middle">Mon</text>
+
+    <text x="171" y="50" fill="#AAAAAA" text-anchor="middle">Tue</text>
+
+    
+
+    <!-- Today (bold and dark) -->
+
+    <text x="285" y="50" fill="#000000" font-weight="bold" text-anchor="middle">Wed</text>
+
+    
+
+    <!-- Future days -->
+
+    <text x="399" y="50" fill="#333333" text-anchor="middle">Thu</text>
+
+    <text x="513" y="50" fill="#333333" text-anchor="middle">Fri</text>
+
+    <text x="627" y="50" fill="#333333" text-anchor="middle">Sat</text>
+
+    <text x="741" y="50" fill="#333333" text-anchor="middle">Sun</text>
+
+  </g>
+
+  <!-- Dates -->
+
+  <g id="dates" font-family="Arial, sans-serif">
+
+    <!-- Past dates -->
+
+    <text x="57" y="110" fill="#AAAAAA" text-anchor="middle">19</text>
+
+    <text x="171" y="110" fill="#AAAAAA" text-anchor="middle">20</text>
+
+    
+
+    <!-- Today's date (larger and bold) -->
+
+    <text x="285" y="110" fill="#000000" font-size="24" font-weight="bold" text-anchor="middle">21</text>
+
+    
+
+    <!-- Future dates -->
+
+    <text x="399" y="110" fill="#333333" text-anchor="middle">22</text>
+
+    <text x="513" y="110" fill="#333333" text-anchor="middle">23</text>
+
+    <text x="627" y="110" fill="#333333" text-anchor="middle">24</text>
+
+    <text x="741" y="110" fill="#333333" text-anchor="middle">25</text>
+
+  </g>
+
+  <!-- Event Indicators -->
+
+  <g id="events">
+
+    <!-- Past events (light) -->
+
+    <circle cx="57" cy="150" r="3" fill="#AAAAAA"/>
+
+    <rect x="37" y="170" width="40" height="10" rx="2" fill="#AAAAAA"/>
+
+    
+
+    <circle cx="171" cy="160" r="3" fill="#AAAAAA"/>
+
+    <rect x="151" y="180" width="40" height="10" rx="2" fill="#AAAAAA"/>
+
+    
+
+    <!-- Today's events (dark) -->
+
+    <circle cx="285" cy="150" r="4" fill="#000000"/>
+
+    <rect x="265" y="170" width="40" height="12" rx="2" fill="#000000"/>
+
+    
+
+    <!-- Future events -->
+
+    <circle cx="399" cy="180" r="3" fill="#333333"/>
+
+    <rect x="379" y="200" width="40" height="10" rx="2" fill="#333333"/>
+
+    
+
+    <circle cx="513" cy="170" r="3" fill="#333333"/>
+
+    <rect x="493" y="190" width="40" height="10" rx="2" fill="#333333"/>
+
+  </g>
+
+  <!-- Timeline -->
+
+  <g id="timeline">
+
+    <!-- Timeline base -->
+
+    <line x1="100" y1="500" x2="700" y2="500" stroke="#E0E0E0" stroke-width="2"/>
+
+    
+
+    <!-- Timeline markers with graduating darkness -->
+
+    <circle cx="200" y1="500" r="4" fill="#AAAAAA"/>
+
+    <circle cx="300" y1="500" r="6" fill="#666666"/>
+
+    <circle cx="400" y1="500" r="4" fill="#444444"/>
+
+    <circle cx="500" y1="500" r="4" fill="#333333"/>
+
+    <circle cx="600" y1="500" r="4" fill="#222222"/>
+
+    
+
+    <!-- Today marker -->
+
+    <circle cx="300" cy="500" r="8" fill="#000000"/>
+
+    
+
+    <!-- Timeline labels -->
+
+    <text x="300" y="530" fill="#000000" text-anchor="middle" font-family="Arial, sans-serif">Today</text>
+
+    <text x="500" y="530" fill="#333333" text-anchor="middle" font-family="Arial, sans-serif">Coming up</text>
+
+  </g>
+
+</svg>

@@ -1,15 +1,17 @@
 class CalendarEvent {
   final String title;
+  final String notes;
   final DateTime startTime;
   final DateTime endTime;
-  final int reminderMinutes;
+  final List<int> reminderMinutes;
   final String color;
 
   CalendarEvent({
     required this.title,
+    this.notes = '',
     required this.startTime,
     required this.endTime,
-    this.reminderMinutes = 20,
+    required this.reminderMinutes,
     this.color = '#FF2D55',  // 默认使用苹果日历红色
   });
 }
