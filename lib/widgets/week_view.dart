@@ -11,7 +11,7 @@ class WeekView extends StatelessWidget {
   static const double TOTAL_HEIGHT = HOUR_HEIGHT * 24;
   static const double TIME_COLUMN_WIDTH = 50.0;
   static const double VERTICAL_LINE_WIDTH = 1.0;
-static const double TODAY_LINE_WIDTH = 2.0;
+  static const double TODAY_LINE_WIDTH = 2.0;
 
   const WeekView({
     super.key,
@@ -150,6 +150,20 @@ static const double TODAY_LINE_WIDTH = 2.0;
                         fontSize: 10,
                       ),
                     ),
+                  if (height > 60 && event.notes.isNotEmpty)
+                    Padding(
+                      padding: EdgeInsets.only(top:4),
+                      child:Text(
+                        event.notes,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.7),
+                          fontSize: 10,
+                          fontStyle: FontStyle.italic,
+                        ),
+                        maxLines: (height > 100) ? 3:1,
+                        overflow: TextOverflow.ellipsis,
+                      )
+                    )
                 ],
               ),
             ),

@@ -11,7 +11,7 @@ class CalendarEvent {
     this.notes = '',
     required this.startTime,
     required this.endTime,
-    List<int>? reminderMinutes,
+    required this.reminderMinutes,
     this.color = '#FF2D55',  // 默认使用苹果日历红色
-  }):reminderMinutes = reminderMinutes ?? [20];
+  });
 }

@@ -6,6 +6,7 @@ import '../models/event.dart';
 import '../services/event_repository.dart';
 import '../constants/theme_constants.dart';
 import '../widgets/week_view.dart';
+import '../widgets/reminder_select.dart';
 
 class CalendarScreen extends StatefulWidget {
   @override
@@ -273,22 +274,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   },
                 ),
                 // 添加提醒选择
-                DropdownButtonFormField<List<int>>(
-                  value: _selectedReminders,
-                  items: [
-                    DropdownMenuItem(value: [0], child: Text('无提醒')),
-                    DropdownMenuItem(value: [5], child: Text('5分钟前')),
-                    DropdownMenuItem(value: [10], child: Text('10分钟前')),
-                    DropdownMenuItem(value: [20], child: Text('20分钟前')),
-                    DropdownMenuItem(value: [30], child: Text('30分钟前')),
-                    DropdownMenuItem(value: [60], child: Text('1小时前')),
-                  ],
-                  onChanged: (value) {
+                ReminderMultiSelect(
+                  initialValue: _selectedReminders,
+                  onChanged: (List<int> value) {
                     setState(() {
-                      _selectedReminders = value ?? [20];
+                      _selectedReminders = value;
                     });
                   },
-                  decoration: InputDecoration(labelText: '提醒'),
                 ),
                 // 添加颜色选择
                 Wrap(

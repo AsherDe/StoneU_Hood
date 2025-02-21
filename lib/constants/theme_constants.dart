@@ -22,7 +22,7 @@ class ThemeConstants {
   static TextStyle getCurrentTextStyle() {
     return TextStyle(
       color: currentColor,
-      fontSize: 15,
+      fontSize: 16,
       fontWeight: FontWeight.bold,
       fontFamily: 'NotoSansSC',
     );
