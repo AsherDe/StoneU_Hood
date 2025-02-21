@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 import '../models/event.dart';
+import '../services/event_repository.dart';
 import '../constants/theme_constants.dart';
 import '../widgets/week_view.dart';
 
@@ -25,6 +26,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
     _scrollController = ScrollController();
     _timer = Timer.periodic(Duration(minutes: 1), (timer) {
       if (mounted) setState(() {});
+    });
+
+    // 加载事件
+    _loadEvents();
+  }
+
+  Future<void> _loadEvents() async {
+    final events = await EventRepository().getEvents();
+    setState(() {
+      _events = events;
     });
   }
 
@@ -53,6 +64,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final firstDayOfYear = DateTime(_selectedDate.year, 1, 1);
     final daysFromStart = _selectedDate.difference(firstDayOfYear).inDays;
     return (daysFromStart / 7).ceil();
+  }
+
+  bool _hasTimeConflict(DateTime start, DateTime end) {
+    return _events.any((event) {
+      // 检查是否有重叠
+      return (start.isBefore(event.endTime) && end.isAfter(event.startTime)) ||
+             (event.startTime.isBefore(end) && event.endTime.isAfter(start));
+    });
   }
 
   @override
@@ -89,6 +108,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: Icon(Icons.file_upload, color: ThemeConstants.currentColor),
+            onPressed: _handleImport,
+          ),
           IconButton(
             icon: Icon(Icons.add, color: ThemeConstants.currentColor),
             onPressed: _showAddEventDialog,
@@ -162,7 +185,211 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  void _showAddEventDialog() {
-    // 保持原有的添加事件对话框逻辑
+  void _showAddEventDialog([CalendarEvent? eventToEdit]) {
+    final _formKey = GlobalKey<FormState>();
+    final _titleController = TextEditingController(text: eventToEdit?.title);
+    final _notesController = TextEditingController(text: eventToEdit?.notes);
+    DateTime _startTime = eventToEdit?.startTime ?? DateTime.now();
+    DateTime _endTime = eventToEdit?.endTime ?? DateTime.now().add(Duration(hours: 1));
+    String _selectedColor = eventToEdit?.color ?? '#FF2D55';
+    List<int> _selectedReminders = eventToEdit?.reminderMinutes ?? [20];
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(eventToEdit == null ? '添加事件' : '编辑事件'),
+        content: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: _titleController,
+                  decoration: InputDecoration(labelText: '标题'),
+                  validator: (value) => value?.isEmpty ?? true ? '请输入标题' : null,
+                ),
+                TextFormField(
+                  controller: _notesController,
+                  decoration: InputDecoration(labelText: '备注'),
+                  maxLines: 3,
+                ),
+                ListTile(
+                  title: Text('开始时间'),
+                  subtitle: Text(DateFormat('yyyy-MM-dd HH:mm').format(_startTime)),
+                  onTap: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: _startTime,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(Duration(days: 365)),
+                    );
+                    if (date != null) {
+                      final time = await showTimePicker(
+                        context: context,
+                        initialTime: TimeOfDay.fromDateTime(_startTime),
+                      );
+                      if (time != null) {
+                        setState(() {
+                          _startTime = DateTime(
+                            date.year,
+                            date.month,
+                            date.day,
+                            time.hour,
+                            time.minute,
+                          );
+                        });
+                      }
+                    }
+                  },
+                ),
+                ListTile(
+                  title: Text('结束时间'),
+                  subtitle: Text(DateFormat('yyyy-MM-dd HH:mm').format(_endTime)),
+                  onTap: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: _endTime,
+                      firstDate: _startTime,
+                      lastDate: DateTime.now().add(Duration(days: 365)),
+                    );
+                    if (date != null) {
+                      final time = await showTimePicker(
+                        context: context,
+                        initialTime: TimeOfDay.fromDateTime(_endTime),
+                      );
+                      if (time != null) {
+                        setState(() {
+                          _endTime = DateTime(
+                            date.year,
+                            date.month,
+                            date.day,
+                            time.hour,
+                            time.minute,
+                          );
+                        });
+                      }
+                    }
+                  },
+                ),
+                // 添加提醒选择
+                DropdownButtonFormField<List<int>>(
+                  value: _selectedReminders,
+                  items: [
+                    DropdownMenuItem(value: [0], child: Text('无提醒')),
+                    DropdownMenuItem(value: [5], child: Text('5分钟前')),
+                    DropdownMenuItem(value: [10], child: Text('10分钟前')),
+                    DropdownMenuItem(value: [20], child: Text('20分钟前')),
+                    DropdownMenuItem(value: [30], child: Text('30分钟前')),
+                    DropdownMenuItem(value: [60], child: Text('1小时前')),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedReminders = value ?? [20];
+                    });
+                  },
+                  decoration: InputDecoration(labelText: '提醒'),
+                ),
+                // 添加颜色选择
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    '#FF2D55',
+                    '#FF9500',
+                    '#FFCC00',
+                    '#4CD964',
+                    '#5856D6',
+                    '#FF2D55',
+                  ].map((color) => GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedColor = color;
+                      });
+                    },
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: Color(int.parse(color.replaceAll('#', '0xFF'))),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: _selectedColor == color 
+                            ? Colors.black 
+                            : Colors.transparent,
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                  )).toList(),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          if (eventToEdit != null)
+            TextButton(
+              child: Text('删除'),
+              onPressed: () async {
+                await EventRepository().deleteEvent(eventToEdit);
+                Navigator.of(context).pop();
+                setState(() {
+                  _events.remove(eventToEdit);
+                });
+              },
+            ),
+          TextButton(
+            child: Text('取消'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          TextButton(
+            child: Text('保存'),
+            onPressed: () async {
+              if (_formKey.currentState?.validate() ?? false) {
+                if (_endTime.isBefore(_startTime)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('结束时间不能早于开始时间')),
+                  );
+                  return;
+                }
+                
+                if (_hasTimeConflict(_startTime, _endTime)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('当前时间段已有其他事件')),
+                  );
+                  return;
+                }
+
+                final event = CalendarEvent(
+                  title: _titleController.text,
+                  notes: _notesController.text,
+                  startTime: _startTime,
+                  endTime: _endTime,
+                  reminderMinutes: _selectedReminders,
+                  color: _selectedColor,
+                );
+
+                if (eventToEdit != null) {
+                  await EventRepository().updateEvent(event);
+                  setState(() {
+                    _events[_events.indexOf(eventToEdit)] = event;
+                  });
+                } else {
+                  await EventRepository().insertEvent(event);
+                  setState(() {
+                    _events.add(event);
+                  });
+                }
+                
+                Navigator.of(context).pop();
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+  void _handleImport() {
+    //处理导入请求
   }
 }
