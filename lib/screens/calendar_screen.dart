@@ -47,6 +47,167 @@ class _CalendarScreenState extends State<CalendarScreen> {
     super.dispose();
   }
 
+  void _handleEventEdit(CalendarEvent event) {
+    // 创建临时变量来存储编辑的值
+  String editedTitle = event.title;
+  String editedNotes = event.notes;
+  DateTime editedStartTime = event.startTime;
+  DateTime editedEndTime = event.endTime;
+
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text('修改事件'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              initialValue: event.title,
+              decoration: InputDecoration(labelText: '标题'),
+              onChanged: (value) => editedTitle = value,
+            ),
+            SizedBox(height: 16),
+            TextFormField(
+              initialValue: event.notes,
+              decoration: InputDecoration(labelText: '备注'),
+              maxLines: 3,
+              onChanged: (value) => editedNotes = value,
+            ),
+            SizedBox(height: 16),
+            ListTile(
+              title: Text('开始时间'),
+              subtitle: Text(DateFormat('yyyy-MM-dd HH:mm').format(editedStartTime)),
+              trailing: Icon(Icons.access_time),
+              onTap: () async {
+                final date = await showDatePicker(
+                  context: context,
+                  initialDate: editedStartTime,
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                );
+                if (date != null) {
+                  final time = await showTimePicker(
+                    context: context,
+                    initialTime: TimeOfDay.fromDateTime(editedStartTime),
+                  );
+                  if (time != null) {
+                    editedStartTime = DateTime(
+                      date.year,
+                      date.month,
+                      date.day,
+                      time.hour,
+                      time.minute,
+                    );
+                    setState(() {});
+                  }
+                }
+              },
+            ),
+            ListTile(
+              title: Text('结束时间'),
+              subtitle: Text(DateFormat('yyyy-MM-dd HH:mm').format(editedEndTime)),
+              trailing: Icon(Icons.access_time),
+              onTap: () async {
+                final date = await showDatePicker(
+                  context: context,
+                  initialDate: editedEndTime,
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                );
+                if (date != null) {
+                  final time = await showTimePicker(
+                    context: context,
+                    initialTime: TimeOfDay.fromDateTime(editedEndTime),
+                  );
+                  if (time != null) {
+                    editedEndTime = DateTime(
+                      date.year,
+                      date.month,
+                      date.day,
+                      time.hour,
+                      time.minute,
+                    );
+                    setState(() {});
+                  }
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          child: Text('取消'),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        TextButton(
+          child: Text('保存'),
+          onPressed: () {
+            // 验证时间
+            if (editedEndTime.isBefore(editedStartTime)) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('结束时间不能早于开始时间')),
+              );
+              return;
+            }
+            
+            // 创建新的事件对象
+            final updatedEvent = CalendarEvent(
+              title: editedTitle,
+              notes: editedNotes,
+              startTime: editedStartTime,
+              endTime: editedEndTime,
+              reminderMinutes: event.reminderMinutes,
+              color: event.color,
+            );
+            
+            // 更新事件列表
+            setState(() {
+              final index = _events.indexOf(event);
+              if (index != -1) {
+                _events[index] = updatedEvent;
+              }
+            });
+            
+            Navigator.of(context).pop();
+          },
+        ),
+      ],
+    ),
+  );
+}
+
+
+  void _handleEventDelete(CalendarEvent event) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('删除事件'),
+        content: Text('确定要删除"${event.title}"吗？'),
+        actions: [
+          TextButton(
+            child: Text('取消'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          TextButton(
+            child: Text('删除'),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            onPressed: () async {
+              await EventRepository().deleteEvent(event);
+              setState(() {
+                _events.remove(event);
+              });
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   double _calculateInitialScrollOffset() {
     final now = DateTime.now();
     final minutes = now.hour * 60 + now.minute;
@@ -109,6 +270,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: Icon(Icons.refresh,color: ThemeConstants.currentColor),
+            onPressed: _handleRefresh,
+          ),
           IconButton(
             icon: Icon(Icons.file_upload, color: ThemeConstants.currentColor),
             onPressed: _handleImport,
@@ -177,6 +342,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 child: WeekView(
                   weekDays: weekDays,
                   events: _events,
+                  onEventEdit: _handleEventEdit,
+                  onEventDelete: _handleEventDelete,
                 ),
               ),
             ),
@@ -197,191 +364,199 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(eventToEdit == null ? '添加事件' : '编辑事件'),
-        content: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: _titleController,
-                  decoration: InputDecoration(labelText: '标题'),
-                  validator: (value) => value?.isEmpty ?? true ? '请输入标题' : null,
-                ),
-                TextFormField(
-                  controller: _notesController,
-                  decoration: InputDecoration(labelText: '备注'),
-                  maxLines: 3,
-                ),
-                ListTile(
-                  title: Text('开始时间'),
-                  subtitle: Text(DateFormat('yyyy-MM-dd HH:mm').format(_startTime)),
-                  onTap: () async {
-                    final date = await showDatePicker(
-                      context: context,
-                      initialDate: _startTime,
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(Duration(days: 365)),
-                    );
-                    if (date != null) {
-                      final time = await showTimePicker(
-                        context: context,
-                        initialTime: TimeOfDay.fromDateTime(_startTime),
-                      );
-                      if (time != null) {
-                        setState(() {
-                          _startTime = DateTime(
-                            date.year,
-                            date.month,
-                            date.day,
-                            time.hour,
-                            time.minute,
+      builder: (context) => StatefulBuilder(
+        builder: (context,setState) {
+          return AlertDialog(
+            title: Text(eventToEdit == null ? '添加事件' : '编辑事件'),
+            content: SingleChildScrollView(
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: _titleController,
+                      decoration: InputDecoration(labelText: '标题'),
+                      validator: (value) => value?.isEmpty ?? true ? '请输入标题' : null,
+                    ),
+                    TextFormField(
+                      controller: _notesController,
+                      decoration: InputDecoration(labelText: '备注'),
+                      maxLines: 3,
+                    ),
+                    ListTile(
+                      title: Text('开始时间'),
+                      subtitle: Text(DateFormat('yyyy-MM-dd HH:mm').format(_startTime)),
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: _startTime,
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime.now().add(Duration(days: 365)),
+                        );
+                        if (date != null) {
+                          final time = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.fromDateTime(_startTime),
                           );
-                        });
-                      }
-                    }
-                  },
-                ),
-                ListTile(
-                  title: Text('结束时间'),
-                  subtitle: Text(DateFormat('yyyy-MM-dd HH:mm').format(_endTime)),
-                  onTap: () async {
-                    final date = await showDatePicker(
-                      context: context,
-                      initialDate: _endTime,
-                      firstDate: _startTime,
-                      lastDate: DateTime.now().add(Duration(days: 365)),
-                    );
-                    if (date != null) {
-                      final time = await showTimePicker(
-                        context: context,
-                        initialTime: TimeOfDay.fromDateTime(_endTime),
-                      );
-                      if (time != null) {
-                        setState(() {
-                          _endTime = DateTime(
-                            date.year,
-                            date.month,
-                            date.day,
-                            time.hour,
-                            time.minute,
+                          if (time != null) {
+                            setState(() {
+                              _startTime = DateTime(
+                                date.year,
+                                date.month,
+                                date.day,
+                                time.hour,
+                                time.minute,
+                              );
+                            });
+                          }
+                        }
+                      },
+                    ),
+                    ListTile(
+                      title: Text('结束时间'),
+                      subtitle: Text(DateFormat('yyyy-MM-dd HH:mm').format(_endTime)),
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: _endTime,
+                          firstDate: _startTime,
+                          lastDate: DateTime.now().add(Duration(days: 365)),
+                        );
+                        if (date != null) {
+                          final time = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.fromDateTime(_endTime),
                           );
+                          if (time != null) {
+                            setState(() {
+                              _endTime = DateTime(
+                                date.year,
+                                date.month,
+                                date.day,
+                                time.hour,
+                                time.minute,
+                              );
+                            });
+                          }
+                        }
+                      },
+                    ),
+                    // 添加提醒选择
+                    ReminderMultiSelect(
+                      initialValue: _selectedReminders,
+                      onChanged: (List<int> value) {
+                        setState(() {
+                          _selectedReminders = value;
                         });
-                      }
-                    }
-                  },
+                      },
+                    ),
+                    // 添加颜色选择
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        '#FF2D55',
+                        '#FF9500',
+                        '#FFCC00',
+                        '#4CD964',
+                        '#5856D6',
+                        '#FF2D55',
+                      ].map((color) => GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedColor = color;
+                          });
+                        },
+                        child: Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: Color(int.parse(color.replaceAll('#', '0xFF'))),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: _selectedColor == color 
+                                ? Colors.black 
+                                : Colors.transparent,
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                      )).toList(),
+                    ),
+                  ],
                 ),
-                // 添加提醒选择
-                ReminderMultiSelect(
-                  initialValue: _selectedReminders,
-                  onChanged: (List<int> value) {
+              ),
+            ),
+            actions: [
+              if (eventToEdit != null)
+                TextButton(
+                  child: Text('删除'),
+                  onPressed: () async {
+                    await EventRepository().deleteEvent(eventToEdit);
+                    Navigator.of(context).pop();
                     setState(() {
-                      _selectedReminders = value;
+                      _events.remove(eventToEdit);
                     });
                   },
                 ),
-                // 添加颜色选择
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    '#FF2D55',
-                    '#FF9500',
-                    '#FFCC00',
-                    '#4CD964',
-                    '#5856D6',
-                    '#FF2D55',
-                  ].map((color) => GestureDetector(
-                    onTap: () {
+              TextButton(
+                child: Text('取消'),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              TextButton(
+                child: Text('保存'),
+                onPressed: () async {
+                  if (_formKey.currentState?.validate() ?? false) {
+                    if (_endTime.isBefore(_startTime)) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('结束时间不能早于开始时间')),
+                      );
+                      return;
+                    }
+                    
+                    if (_hasTimeConflict(_startTime, _endTime)) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('当前时间段已有其他事件')),
+                      );
+                      return;
+                    }
+
+                    final event = CalendarEvent(
+                      title: _titleController.text,
+                      notes: _notesController.text,
+                      startTime: _startTime,
+                      endTime: _endTime,
+                      reminderMinutes: _selectedReminders,
+                      color: _selectedColor,
+                    );
+
+                    if (eventToEdit != null) {
+                      await EventRepository().updateEvent(event);
                       setState(() {
-                        _selectedColor = color;
+                        _events[_events.indexOf(eventToEdit)] = event;
                       });
-                    },
-                    child: Container(
-                      width: 30,
-                      height: 30,
-                      decoration: BoxDecoration(
-                        color: Color(int.parse(color.replaceAll('#', '0xFF'))),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: _selectedColor == color 
-                            ? Colors.black 
-                            : Colors.transparent,
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                  )).toList(),
-                ),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          if (eventToEdit != null)
-            TextButton(
-              child: Text('删除'),
-              onPressed: () async {
-                await EventRepository().deleteEvent(eventToEdit);
-                Navigator.of(context).pop();
-                setState(() {
-                  _events.remove(eventToEdit);
-                });
-              },
-            ),
-          TextButton(
-            child: Text('取消'),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          TextButton(
-            child: Text('保存'),
-            onPressed: () async {
-              if (_formKey.currentState?.validate() ?? false) {
-                if (_endTime.isBefore(_startTime)) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('结束时间不能早于开始时间')),
-                  );
-                  return;
-                }
-                
-                if (_hasTimeConflict(_startTime, _endTime)) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('当前时间段已有其他事件')),
-                  );
-                  return;
-                }
-
-                final event = CalendarEvent(
-                  title: _titleController.text,
-                  notes: _notesController.text,
-                  startTime: _startTime,
-                  endTime: _endTime,
-                  reminderMinutes: _selectedReminders,
-                  color: _selectedColor,
-                );
-
-                if (eventToEdit != null) {
-                  await EventRepository().updateEvent(event);
-                  setState(() {
-                    _events[_events.indexOf(eventToEdit)] = event;
-                  });
-                } else {
-                  await EventRepository().insertEvent(event);
-                  setState(() {
-                    _events.add(event);
-                  });
-                }
-                
-                Navigator.of(context).pop();
-              }
-            },
-          ),
-        ],
+                    } else {
+                      await EventRepository().insertEvent(event);
+                      setState(() {
+                        _events.add(event);
+                      });
+                    }
+                    
+                    Navigator.of(context).pop();
+                  }
+                },
+              ),
+            ],
+          );
+        }, 
       ),
     );
   }
   void _handleImport() {
-    //处理导入请求
+    // 处理导入请求
+  }
+
+  void _handleRefresh() {
+    // 处理刷新请求
   }
 }

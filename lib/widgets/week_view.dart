@@ -7,6 +7,9 @@ import '../constants/theme_constants.dart';
 class WeekView extends StatelessWidget {
   final List<DateTime> weekDays;
   final List<CalendarEvent> events;
+  final Function(CalendarEvent)? onEventEdit;
+  final Function(CalendarEvent)? onEventDelete;
+
   static const double HOUR_HEIGHT = 60.0;
   static const double TOTAL_HEIGHT = HOUR_HEIGHT * 24;
   static const double TIME_COLUMN_WIDTH = 50.0;
@@ -17,6 +20,8 @@ class WeekView extends StatelessWidget {
     super.key,
     required this.weekDays,
     required this.events,
+    this.onEventEdit,
+    this.onEventDelete,
   });
 
   Color getEventColor(CalendarEvent event) {
@@ -43,6 +48,51 @@ class WeekView extends StatelessWidget {
     return (duration / 60) * HOUR_HEIGHT;
   }
 
+  void _showEventOptions(BuildContext context, CalendarEvent event) {
+    final RenderBox button = context.findRenderObject() as RenderBox;
+    final Offset offset = button.localToGlobal(Offset.zero);
+    showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        offset.dx,
+        offset.dy,
+        offset.dx + button.size.width,
+        offset.dy + button.size.height,
+      ),
+      items: [
+        PopupMenuItem(
+          child: Row(
+            children: [
+              Icon(Icons.edit, size: 20),
+              SizedBox(width: 8),
+              Text('修改事件'),
+            ],
+          ),
+          onTap: () {
+            // Need to wait for the menu to close before showing dialog
+            Future.delayed(const Duration(seconds: 0), () {
+              if (onEventEdit != null) onEventEdit!(event);
+            });
+          },
+        ),
+        PopupMenuItem(
+          child: Row(
+            children: [
+              Icon(Icons.delete, color: Colors.red, size: 20),
+              SizedBox(width: 8),
+              Text('删除事件', style: TextStyle(color: Colors.red)),
+            ],
+          ),
+          onTap: () {
+            Future.delayed(const Duration(seconds: 0), () {
+              if (onEventDelete != null) onEventDelete!(event);
+            });
+          },
+        ),
+      ],
+    );
+  }
+  
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
@@ -122,51 +172,56 @@ class WeekView extends StatelessWidget {
             top: top,
             width: dayWidth,
             height: height,
-            child: Container(
-              margin: EdgeInsets.symmetric(horizontal: 2, vertical: 1),
-              decoration: BoxDecoration(
-                color: getEventColor(event),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              padding: EdgeInsets.all(4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    event.title,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (height > 40) // 只在足够高的事件中显示时间
+            child: GestureDetector(
+              onTapUp: (TapUpDetails details) {
+                _showEventOptions(context, event);
+              },
+              child: Container(
+                margin: EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+                decoration: BoxDecoration(
+                  color: getEventColor(event),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                padding: EdgeInsets.all(4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      '${DateFormat('HH:mm').format(event.startTime)} - ${DateFormat('HH:mm').format(event.endTime)}',
+                      event.title,
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
-                        fontSize: 10,
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  if (height > 60 && event.notes.isNotEmpty)
-                    Padding(
-                      padding: EdgeInsets.only(top:4),
-                      child:Text(
-                        event.notes,
+                    if (height > 40) // 只在足够高的事件中显示时间
+                      Text(
+                        '${DateFormat('HH:mm').format(event.startTime)} - ${DateFormat('HH:mm').format(event.endTime)}',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
+                          color: Colors.white.withOpacity(0.8),
                           fontSize: 10,
-                          fontStyle: FontStyle.italic,
                         ),
-                        maxLines: (height > 100) ? 3:1,
-                        overflow: TextOverflow.ellipsis,
+                      ),
+                    if (height > 60 && event.notes.isNotEmpty)
+                      Padding(
+                        padding: EdgeInsets.only(top:4),
+                        child:Text(
+                          event.notes,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: 10,
+                            fontStyle: FontStyle.italic,
+                          ),
+                          maxLines: (height > 100) ? 3:1,
+                          overflow: TextOverflow.ellipsis,
+                        )
                       )
-                    )
-                ],
+                  ],
+                ),
               ),
-            ),
+            )
           );
         }).toList(),
 
