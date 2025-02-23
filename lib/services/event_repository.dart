@@ -25,6 +25,10 @@ class EventRepository {
             endTime TEXT,
             reminderMinutes TEXT,
             color TEXT
+            CREATE TABLE semester_settings(
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              first_week_date TEXT,
+              is_active INTEGER
           )
         ''');
       },
@@ -78,5 +82,34 @@ class EventRepository {
   Future<void> updateEvent(CalendarEvent event) async {
     await deleteEvent(event);
     await insertEvent(event);
+  }
+
+  Future<DateTime?> getActiveFirstWeekDate() async {
+    final db = await database;
+    final result = await db.query(
+      'semester_settings',
+      where: 'is_active = 1',
+      limit: 1,
+    );
+    
+    if (result.isEmpty) return null;
+    return DateTime.parse(result.first['first_week_date'] as String);
+  }
+
+  Future<void> setFirstWeekDate(DateTime date) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      // 将所有记录设置为非活动
+      await txn.update('semester_settings', 
+        {'is_active': 0},
+        where: 'is_active = 1'
+      );
+      
+      // 添加新的学期设置
+      await txn.insert('semester_settings', {
+        'first_week_date': date.toIso8601String(),
+        'is_active': 1,
+      });
+    });
   }
 }

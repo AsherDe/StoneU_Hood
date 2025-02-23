@@ -7,6 +7,7 @@ import '../services/event_repository.dart';
 import '../constants/theme_constants.dart';
 import '../widgets/week_view.dart';
 import '../widgets/reminder_select.dart';
+import '../widgets/semester_settings_dialog.dart';
 
 class CalendarScreen extends StatefulWidget {
   @override
@@ -28,6 +29,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     _timer = Timer.periodic(Duration(minutes: 1), (timer) {
       if (mounted) setState(() {});
     });
+    _checkSemesterSettings();
 
     // 加载事件
     _loadEvents();
@@ -45,6 +47,42 @@ class _CalendarScreenState extends State<CalendarScreen> {
     _timer?.cancel();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _checkSemesterSettings() async {
+    final firstWeekDate = await EventRepository().getActiveFirstWeekDate();
+    
+    if (firstWeekDate == null) {
+      _showSemesterSettingsDialog();
+      return;
+    }
+
+    // 检查是否已经过了20周
+    final now = DateTime.now();
+    final weeksPassed = now.difference(firstWeekDate).inDays ~/ 7;
+    
+    if (weeksPassed >= 20) {
+      _showSemesterSettingsDialog();
+    }
+  }
+
+  Future<void> _showSemesterSettingsDialog() async {
+    final currentFirstWeek = await EventRepository().getActiveFirstWeekDate();
+    
+    final result = await showDialog<DateTime>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => SemesterSettingsDialog(
+        currentFirstWeek: currentFirstWeek,
+      ),
+    );
+
+    if (result != null) {
+      await EventRepository().setFirstWeekDate(result);
+      setState(() {
+        // 刷新界面
+      });
+    }
   }
 
   void _handleEventEdit(CalendarEvent event) {
@@ -270,6 +308,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: Icon(Icons.calendar_today, color: ThemeConstants.currentColor),
+            onPressed: _showSemesterSettingsDialog,
+          ),
           IconButton(
             icon: Icon(Icons.refresh,color: ThemeConstants.currentColor),
             onPressed: _handleRefresh,
