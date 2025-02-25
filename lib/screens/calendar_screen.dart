@@ -25,7 +25,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   Timer? _timer;
   bool _isInitialScroll = true;
   int _currentPage = 500;
-  final NotificationService _notificationService = NotificationService();
+  
 
   @override
   void initState() {
@@ -38,7 +38,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
       if (mounted) setState(() {});
     });
     _checkSemesterSettings();
-    _notificationService.initialize();
     // 加载事件
     _loadEvents();
   }
