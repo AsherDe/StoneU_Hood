@@ -50,5 +50,9 @@
 	<string>需要访问日历以添加提醒</string>
 	<key>NSRemindersUsageDescription</key>
 	<string>需要访问提醒功能</string>
+	<key>NSAppTransportSecurity</key>  
+	<dict>  
+		<key>NSAllowsArbitraryLoads</key><true/>  
+	</dict>
 </dict>
 </plist>

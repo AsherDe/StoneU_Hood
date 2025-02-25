@@ -14,7 +14,7 @@ class EventRepository {
     String path = join(await getDatabasesPath(), 'calendar.db');
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE events(
@@ -25,14 +25,51 @@ class EventRepository {
             endTime TEXT,
             reminderMinutes TEXT,
             color TEXT
-            CREATE TABLE semester_settings(
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              first_week_date TEXT,
-              is_active INTEGER
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE settings(
+            key TEXT PRIMARY KEY,
+            value TEXT
           )
         ''');
       },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute('''
+            CREATE TABLE settings(
+              key TEXT PRIMARY KEY,
+              value TEXT
+            )
+          ''');
+        }
+      }
     );
+  }
+
+  Future<void> setStartDate(DateTime startDate) async {
+    final db = await database;
+    await db.insert(
+      'settings',
+      {
+        'key': 'start_date',
+        'value': startDate.toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<DateTime?> getStartDate() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'settings',
+      where: 'key = ?',
+      whereArgs: ['start_date'],
+    );
+    
+    if (maps.isEmpty) return null;
+    return DateTime.parse(maps.first['value']);
   }
 
   Future<void> insertEvent(CalendarEvent event) async {

@@ -8,6 +8,8 @@ import '../constants/theme_constants.dart';
 import '../widgets/week_view.dart';
 import '../widgets/reminder_select.dart';
 import '../widgets/semester_settings_dialog.dart';
+import '../services/timetable_webview.dart';
+
 
 class CalendarScreen extends StatefulWidget {
   @override
@@ -16,21 +18,27 @@ class CalendarScreen extends StatefulWidget {
 
 class _CalendarScreenState extends State<CalendarScreen> {
   late DateTime _selectedDate;
+  DateTime? _startDate;
   late ScrollController _scrollController;
+  late PageController _pageController;
   List<CalendarEvent> _events = [];
   Timer? _timer;
   bool _isInitialScroll = true;
+  int _currentPage = 500;
+  final NotificationService _notificationService = NotificationService();
 
   @override
   void initState() {
     super.initState();
     _selectedDate = DateTime.now();
+    _loadStartDate();
     _scrollController = ScrollController();
+    _pageController = PageController(initialPage: _currentPage);
     _timer = Timer.periodic(Duration(minutes: 1), (timer) {
       if (mounted) setState(() {});
     });
     _checkSemesterSettings();
-
+    _notificationService.initialize();
     // 加载事件
     _loadEvents();
   }
@@ -42,10 +50,36 @@ class _CalendarScreenState extends State<CalendarScreen> {
     });
   }
 
+  Future<void> _loadStartDate() async {
+    final startDate = await EventRepository().getStartDate();
+    setState(() {
+      _startDate = startDate;
+    });
+  }
+
+  Future<void> _setStartDate() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _startDate ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    
+    if (date != null) {
+      // 将日期调整到那一周的周一
+      final monday = date.subtract(Duration(days: date.weekday - 1));
+      await EventRepository().setStartDate(monday);
+      setState(() {
+        _startDate = monday;
+      });
+    }
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
     _scrollController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -253,17 +287,25 @@ class _CalendarScreenState extends State<CalendarScreen> {
         (MediaQuery.of(context).size.height / 2);
   }
 
-  List<DateTime> _getWeekDays() {
-    DateTime startOfWeek = _selectedDate.subtract(
-      Duration(days: _selectedDate.weekday - 1),
-    );
+  List<DateTime> _getWeekDays([int weekOffset = 0]) {
+    DateTime baseDate = _selectedDate;
+    // 根据页面偏移计算日期
+    DateTime startOfWeek = baseDate
+        .subtract(Duration(days: baseDate.weekday - 1))
+        .add(Duration(days: weekOffset * 7));
     return List.generate(7, (index) => startOfWeek.add(Duration(days: index)));
   }
 
   int _getCurrentWeekNumber() {
-    final firstDayOfYear = DateTime(_selectedDate.year, 1, 1);
-    final daysFromStart = _selectedDate.difference(firstDayOfYear).inDays;
-    return (daysFromStart / 7).ceil();
+    if (_startDate == null) return 0;
+    
+    final difference = _selectedDate.difference(_startDate!).inDays;
+    final weekNumber = (difference / 7).floor() + 1;
+    
+    // 确保周数在1-20之间
+    if (weekNumber < 1) return 1;
+    if (weekNumber > 20) return 20;
+    return weekNumber;
   }
 
   bool _hasTimeConflict(DateTime start, DateTime end) {
@@ -282,9 +324,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
         _isInitialScroll = false;
       });
     }
-
-    final weekDays = _getWeekDays();
-    final now = DateTime.now();
     
     return Scaffold(
       backgroundColor: Colors.white,
@@ -298,11 +337,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
               style: TextStyle(color: ThemeConstants.currentColor),
             ),
             SizedBox(width: 8),
-            Text(
-              '第${_getCurrentWeekNumber()}周',
-              style: TextStyle(
-                color: ThemeConstants.upcomingColor,
-                fontSize: 14,
+            GestureDetector(
+              onTap: _setStartDate,
+              child: Text(
+                '第${_getCurrentWeekNumber()}周',
+                style: TextStyle(
+                  color: ThemeConstants.upcomingColor,
+                  fontSize: 14,
+                ),
               ),
             ),
           ],
@@ -328,72 +370,126 @@ class _CalendarScreenState extends State<CalendarScreen> {
       ),
       body: Column(
         children: [
-          // 星期标题行
+          // 周数指示器
           Container(
-            padding: EdgeInsets.only(left: WeekView.TIME_COLUMN_WIDTH, right: 8, top: 10, bottom: 10),
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color: ThemeConstants.gridLineColor,
-                  width: ThemeConstants.gridLineWidth,
-                ),
-              ),
-            ),
+            padding: EdgeInsets.symmetric(vertical: 8),
             child: Row(
-              children: weekDays.map((date) {
-                final isToday = date.year == now.year && 
-                               date.month == now.month && 
-                               date.day == now.day;
-                final isPast = date.isBefore(
-                  DateTime(now.year, now.month, now.day),
-                );
-                
-                return Expanded(
-                  child: Column(
-                    children: [
-                      Text(
-                        DateFormat('E', 'zh_CN').format(date),
-                        style: isPast
-                            ? ThemeConstants.getPastTextStyle()
-                            : isToday
-                                ? ThemeConstants.getCurrentTextStyle()
-                                : ThemeConstants.getUpcomingTextStyle(),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        date.day.toString(),
-                        style: isPast
-                            ? ThemeConstants.getPastTextStyle()
-                            : isToday
-                                ? ThemeConstants.getCurrentTextStyle()
-                                : ThemeConstants.getUpcomingTextStyle(),
-                      ),
-                    ],
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.arrow_left),
+                  onPressed: () {
+                    _pageController.previousPage(
+                      duration: Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                ),
+                Text(
+                  '第${_getCurrentWeekNumber()}周',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
                   ),
-                );
-              }).toList(),
+                ),
+                IconButton(
+                  icon: Icon(Icons.arrow_right),
+                  onPressed: () {
+                    _pageController.nextPage(
+                      duration: Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                ),
+              ],
             ),
           ),
-          
+          // 星期标题行
+          _buildWeekHeader(),
           // 日历主体
           Expanded(
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              child: SizedBox(
-                height: WeekView.TOTAL_HEIGHT,
-                child: WeekView(
-                  weekDays: weekDays,
-                  events: _events,
-                  onEventEdit: _handleEventEdit,
-                  onEventDelete: _handleEventDelete,
-                ),
-              ),
+            child: PageView.builder(
+              controller: _pageController,
+              onPageChanged: (page) {
+                setState(() {
+                  _currentPage = page;
+                  // 更新选中日期
+                  _selectedDate = _selectedDate.add(
+                    Duration(days: (page - _currentPage) * 7),
+                  );
+                });
+              },
+              itemBuilder: (context, index) {
+                final weekOffset = index - 500; // 相对于当前周的偏移
+                final weekDays = _getWeekDays(weekOffset);
+                return SingleChildScrollView(
+                  controller: _scrollController,
+                  child: SizedBox(
+                    height: WeekView.TOTAL_HEIGHT,
+                    child: WeekView(
+                      weekDays: weekDays,
+                      events: _events,
+                      onEventEdit: _handleEventEdit,
+                      onEventDelete: _handleEventDelete,
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ],
       ),
     );
   }
+
+  Widget _buildWeekHeader() {
+    final weekDays = _getWeekDays(_currentPage - 500);
+    final now = DateTime.now();
+    
+    return Container(
+      padding: EdgeInsets.only(
+        left: WeekView.TIME_COLUMN_WIDTH,
+        right: 8,
+        top: 10,
+        bottom: 10
+      ),
+      child: Row(
+        children: weekDays.map((date) {
+          final isToday = date.year == now.year && 
+                         date.month == now.month && 
+                         date.day == now.day;
+          final isPast = date.isBefore(
+            DateTime(now.year, now.month, now.day),
+          );
+          
+          return Expanded(
+            child: Column(
+              children: [
+                Text(
+                  DateFormat('E', 'zh_CN').format(date),
+                  style: isPast
+                      ? ThemeConstants.getPastTextStyle()
+                      : isToday
+                          ? ThemeConstants.getCurrentTextStyle()
+                          : ThemeConstants.getUpcomingTextStyle(),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  date.day.toString(),
+                  style: isPast
+                      ? ThemeConstants.getPastTextStyle()
+                      : isToday
+                          ? ThemeConstants.getCurrentTextStyle()
+                          : ThemeConstants.getUpcomingTextStyle(),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
 
   void _showAddEventDialog([CalendarEvent? eventToEdit]) {
     final _formKey = GlobalKey<FormState>();
@@ -594,9 +690,86 @@ class _CalendarScreenState extends State<CalendarScreen> {
       ),
     );
   }
-  void _handleImport() {
-    // 处理导入请求
+
+void _handleImport() async {
+  //处理数据导入
+  try {
+    // Show the timetable import dialog
+    final List<CalendarEvent>? importedEvents = await showDialog<List<CalendarEvent>>(
+      context: context,
+      builder: (context) => TimetableWebView(
+        onEventsImported: (events) {
+          Navigator.of(context).pop(events);
+        },
+      ),
+    );
+
+    // If no events were imported or dialog was dismissed, return early
+    if (importedEvents == null || importedEvents.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('没有导入任何课程')),
+      );
+      return;
+    }
+
+    // Show confirmation dialog with event count
+    final bool? shouldImport = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('确认导入'),
+        content: Text('发现 ${importedEvents.length} 个课程，是否导入？\n注意：导入可能需要一些时间。'),
+        actions: [
+          TextButton(
+            child: Text('取消'),
+            onPressed: () => Navigator.of(context).pop(false),
+          ),
+          TextButton(
+            child: Text('导入'),
+            onPressed: () => Navigator.of(context).pop(true),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldImport != true) return;
+
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    // Insert events into database
+    final eventRepository = EventRepository();
+    for (final event in importedEvents) {
+      await eventRepository.insertEvent(event);
+    }
+
+    // Close loading indicator
+    Navigator.of(context).pop();
+
+    // Refresh events list
+    await _loadEvents();
+
+    // Show success message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('成功导入 ${importedEvents.length} 个课程')),
+    );
+  } catch (e) {
+    // Close loading indicator if it's showing
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+    
+    // Show error message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('导入失败：${e.toString()}')),
+    );
   }
+}
 
   void _handleRefresh() {
     // 处理刷新请求
