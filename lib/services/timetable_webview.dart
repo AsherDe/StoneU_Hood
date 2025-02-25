@@ -31,6 +31,7 @@ class _TimetableWebViewState extends State<TimetableWebView> {
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0x00000000))
       ..setUserAgent('Mozilla/5.0 (Linux; Android 12; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36')
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
@@ -51,6 +52,10 @@ class _TimetableWebViewState extends State<TimetableWebView> {
               }
             });
           },
+          // 添加此配置以允许混合内容加载
+          onUrlChange: (UrlChange change) {
+            print('URL changed to: ${change.url}');
+          },
           onWebResourceError: (WebResourceError error) {
             setState(() {
               _statusMessage = '页面加载错误: ${error.description}';
@@ -60,6 +65,7 @@ class _TimetableWebViewState extends State<TimetableWebView> {
         ),
       )
       ..enableZoom(true);
+      
     
     // Clear cookies for a fresh session
     WebViewCookieManager().clearCookies();
@@ -247,7 +253,7 @@ class _TimetableWebViewState extends State<TimetableWebView> {
                 }
               })()
             ''');
-            
+     
             // Convert result to string (removing quotes from JS string)
             html = iframeContent.toString();
             if (html.startsWith('"') && html.endsWith('"')) {
@@ -266,7 +272,7 @@ class _TimetableWebViewState extends State<TimetableWebView> {
             }
             
             // 如果由于同源策略无法直接获取iframe内容，尝试注入JavaScript到iframe
-            if (html.contains("同源策略")) {
+            if (true) {
               print("正在尝试注入脚本到iframe...");
               await _controller.runJavaScript('''
                 (function() {
@@ -452,49 +458,6 @@ class _TimetableWebViewState extends State<TimetableWebView> {
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('了解'),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  void _showPageContentDialog(String html) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('页面内容分析'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('页面内容中未找到课程表相关标记，可能是：'),
-            const SizedBox(height: 8),
-            const Text('1. 未登录或未导航到课表页面'),
-            const Text('2. 学校系统使用了不同的标记方式'),
-            const SizedBox(height: 16),
-            const Text('页面内容片段：'),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(4),
-              ),
-              height: 100,
-              child: SingleChildScrollView(
-                child: Text(
-                  html.length > 1000 
-                      ? html.substring(0, 1000) + '...' 
-                      : html,
-                  style: const TextStyle(fontSize: 12),
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('关闭'),
           ),
         ],
       ),

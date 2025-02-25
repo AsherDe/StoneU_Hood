@@ -7,8 +7,7 @@ import '../constants/theme_constants.dart';
 class WeekView extends StatelessWidget {
   final List<DateTime> weekDays;
   final List<CalendarEvent> events;
-  final Function(CalendarEvent)? onEventEdit;
-  final Function(CalendarEvent)? onEventDelete;
+  final Function(CalendarEvent)? onEventTap;
 
   static const double HOUR_HEIGHT = 60.0;
   static const double TOTAL_HEIGHT = HOUR_HEIGHT * 24;
@@ -20,8 +19,7 @@ class WeekView extends StatelessWidget {
     super.key,
     required this.weekDays,
     required this.events,
-    this.onEventEdit,
-    this.onEventDelete,
+    this.onEventTap,
   });
 
   Color getEventColor(CalendarEvent event) {
@@ -32,7 +30,7 @@ class WeekView extends StatelessWidget {
     if (event.startTime.isBefore(now) && event.endTime.isAfter(now)) {
       return ThemeConstants.currentColor;
     }
-    return ThemeConstants.upcomingColor;
+    return Color(int.parse(event.color.replaceAll('#', '0xFF')));
   }
 
   double _calculateEventPosition(DateTime time) {
@@ -47,51 +45,6 @@ class WeekView extends StatelessWidget {
     final duration = adjustedEnd.difference(start).inMinutes;
     return (duration / 60) * HOUR_HEIGHT;
   }
-
-  void _showEventOptions(BuildContext context, CalendarEvent event) {
-    final RenderBox button = context.findRenderObject() as RenderBox;
-    final Offset offset = button.localToGlobal(Offset.zero);
-    showMenu(
-      context: context,
-      position: RelativeRect.fromLTRB(
-        offset.dx,
-        offset.dy,
-        offset.dx + button.size.width,
-        offset.dy + button.size.height,
-      ),
-      items: [
-        PopupMenuItem(
-          child: Row(
-            children: [
-              Icon(Icons.edit, size: 20),
-              SizedBox(width: 8),
-              Text('修改事件'),
-            ],
-          ),
-          onTap: () {
-            // Need to wait for the menu to close before showing dialog
-            Future.delayed(const Duration(seconds: 0), () {
-              if (onEventEdit != null) onEventEdit!(event);
-            });
-          },
-        ),
-        PopupMenuItem(
-          child: Row(
-            children: [
-              Icon(Icons.delete, color: Colors.red, size: 20),
-              SizedBox(width: 8),
-              Text('删除事件', style: TextStyle(color: Colors.red)),
-            ],
-          ),
-          onTap: () {
-            Future.delayed(const Duration(seconds: 0), () {
-              if (onEventDelete != null) onEventDelete!(event);
-            });
-          },
-        ),
-      ],
-    );
-  }
   
   @override
   Widget build(BuildContext context) {
@@ -103,7 +56,7 @@ class WeekView extends StatelessWidget {
       date.year == now.year &&
       date.month == now.month &&
       date.day == now.day
-      );
+    );
     
     return Stack(
       children: [
@@ -152,7 +105,6 @@ class WeekView extends StatelessWidget {
           }),
         ),
         
-
         // 事件层
         ...events.map((event) {
           final dayIndex = weekDays.indexWhere((day) =>
@@ -173,8 +125,8 @@ class WeekView extends StatelessWidget {
             width: dayWidth,
             height: height,
             child: GestureDetector(
-              onTapUp: (TapUpDetails details) {
-                _showEventOptions(context, event);
+              onTap: () {
+                if (onEventTap != null) onEventTap!(event);
               },
               child: Container(
                 margin: EdgeInsets.symmetric(horizontal: 2, vertical: 1),
@@ -228,10 +180,10 @@ class WeekView extends StatelessWidget {
         // 当前时间指示器
         Positioned(
           left: TIME_COLUMN_WIDTH + (weekDays.indexWhere((day) =>
-          day.year == now.year &&
-          day.month == now.month &&
-          day.day == now.day
-        ) * dayWidth),
+            day.year == now.year &&
+            day.month == now.month &&
+            day.day == now.day
+          ) * dayWidth),
           width: dayWidth,
           top: _calculateEventPosition(now),
           child: Container(
