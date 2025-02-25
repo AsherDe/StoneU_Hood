@@ -7,6 +7,8 @@ import '../constants/theme_constants.dart';
 class WeekView extends StatelessWidget {
   final List<DateTime> weekDays;
   final List<CalendarEvent> events;
+  final Function(CalendarEvent)? onEventTap;
+
   static const double HOUR_HEIGHT = 60.0;
   static const double TOTAL_HEIGHT = HOUR_HEIGHT * 24;
   static const double TIME_COLUMN_WIDTH = 50.0;
@@ -17,6 +19,7 @@ class WeekView extends StatelessWidget {
     super.key,
     required this.weekDays,
     required this.events,
+    this.onEventTap,
   });
 
   Color getEventColor(CalendarEvent event) {
@@ -27,7 +30,7 @@ class WeekView extends StatelessWidget {
     if (event.startTime.isBefore(now) && event.endTime.isAfter(now)) {
       return ThemeConstants.currentColor;
     }
-    return ThemeConstants.upcomingColor;
+    return Color(int.parse(event.color.replaceAll('#', '0xFF')));
   }
 
   double _calculateEventPosition(DateTime time) {
@@ -42,7 +45,7 @@ class WeekView extends StatelessWidget {
     final duration = adjustedEnd.difference(start).inMinutes;
     return (duration / 60) * HOUR_HEIGHT;
   }
-
+  
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
@@ -53,7 +56,7 @@ class WeekView extends StatelessWidget {
       date.year == now.year &&
       date.month == now.month &&
       date.day == now.day
-      );
+    );
     
     return Stack(
       children: [
@@ -102,7 +105,6 @@ class WeekView extends StatelessWidget {
           }),
         ),
         
-
         // 事件层
         ...events.map((event) {
           final dayIndex = weekDays.indexWhere((day) =>
@@ -122,61 +124,66 @@ class WeekView extends StatelessWidget {
             top: top,
             width: dayWidth,
             height: height,
-            child: Container(
-              margin: EdgeInsets.symmetric(horizontal: 2, vertical: 1),
-              decoration: BoxDecoration(
-                color: getEventColor(event),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              padding: EdgeInsets.all(4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    event.title,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (height > 40) // 只在足够高的事件中显示时间
+            child: GestureDetector(
+              onTap: () {
+                if (onEventTap != null) onEventTap!(event);
+              },
+              child: Container(
+                margin: EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+                decoration: BoxDecoration(
+                  color: getEventColor(event),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                padding: EdgeInsets.all(4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      '${DateFormat('HH:mm').format(event.startTime)} - ${DateFormat('HH:mm').format(event.endTime)}',
+                      event.title,
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
-                        fontSize: 10,
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  if (height > 60 && event.notes.isNotEmpty)
-                    Padding(
-                      padding: EdgeInsets.only(top:4),
-                      child:Text(
-                        event.notes,
+                    if (height > 40) // 只在足够高的事件中显示时间
+                      Text(
+                        '${DateFormat('HH:mm').format(event.startTime)} - ${DateFormat('HH:mm').format(event.endTime)}',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
+                          color: Colors.white.withOpacity(0.8),
                           fontSize: 10,
-                          fontStyle: FontStyle.italic,
                         ),
-                        maxLines: (height > 100) ? 3:1,
-                        overflow: TextOverflow.ellipsis,
+                      ),
+                    if (height > 60 && event.notes.isNotEmpty)
+                      Padding(
+                        padding: EdgeInsets.only(top:4),
+                        child:Text(
+                          event.notes,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: 10,
+                            fontStyle: FontStyle.italic,
+                          ),
+                          maxLines: (height > 100) ? 3:1,
+                          overflow: TextOverflow.ellipsis,
+                        )
                       )
-                    )
-                ],
+                  ],
+                ),
               ),
-            ),
+            )
           );
         }).toList(),
 
         // 当前时间指示器
         Positioned(
           left: TIME_COLUMN_WIDTH + (weekDays.indexWhere((day) =>
-          day.year == now.year &&
-          day.month == now.month &&
-          day.day == now.day
-        ) * dayWidth),
+            day.year == now.year &&
+            day.month == now.month &&
+            day.day == now.day
+          ) * dayWidth),
           width: dayWidth,
           top: _calculateEventPosition(now),
           child: Container(

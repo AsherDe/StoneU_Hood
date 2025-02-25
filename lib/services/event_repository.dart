@@ -14,7 +14,7 @@ class EventRepository {
     String path = join(await getDatabasesPath(), 'calendar.db');
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE events(
@@ -27,8 +27,49 @@ class EventRepository {
             color TEXT
           )
         ''');
+
+        await db.execute('''
+          CREATE TABLE settings(
+            key TEXT PRIMARY KEY,
+            value TEXT
+          )
+        ''');
       },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute('''
+            CREATE TABLE settings(
+              key TEXT PRIMARY KEY,
+              value TEXT
+            )
+          ''');
+        }
+      }
     );
+  }
+
+  Future<void> setStartDate(DateTime startDate) async {
+    final db = await database;
+    await db.insert(
+      'settings',
+      {
+        'key': 'start_date',
+        'value': startDate.toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<DateTime?> getStartDate() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'settings',
+      where: 'key = ?',
+      whereArgs: ['start_date'],
+    );
+    
+    if (maps.isEmpty) return null;
+    return DateTime.parse(maps.first['value']);
   }
 
   Future<void> insertEvent(CalendarEvent event) async {
@@ -78,5 +119,34 @@ class EventRepository {
   Future<void> updateEvent(CalendarEvent event) async {
     await deleteEvent(event);
     await insertEvent(event);
+  }
+
+  Future<DateTime?> getActiveFirstWeekDate() async {
+    final db = await database;
+    final result = await db.query(
+      'semester_settings',
+      where: 'is_active = 1',
+      limit: 1,
+    );
+    
+    if (result.isEmpty) return null;
+    return DateTime.parse(result.first['first_week_date'] as String);
+  }
+
+  Future<void> setFirstWeekDate(DateTime date) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      // 将所有记录设置为非活动
+      await txn.update('semester_settings', 
+        {'is_active': 0},
+        where: 'is_active = 1'
+      );
+      
+      // 添加新的学期设置
+      await txn.insert('semester_settings', {
+        'first_week_date': date.toIso8601String(),
+        'is_active': 1,
+      });
+    });
   }
 }
