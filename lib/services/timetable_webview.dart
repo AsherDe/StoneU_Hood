@@ -68,7 +68,7 @@ class _TimetableWebViewState extends State<TimetableWebView> {
       
     
     // Clear cookies for a fresh session
-    WebViewCookieManager().clearCookies();
+    // WebViewCookieManager().clearCookies();
     
     // Load the website
     _controller.loadRequest(Uri.parse('https://jwgl.shzu.edu.cn/'));

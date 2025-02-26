@@ -10,7 +10,7 @@ Calendar app written by current students at Shihezi University, developed using 
     1.基本的日历功能
     2.设置和显示当前是该学期的第几周
     3.适配石河子大学课程系统，实现课程的总体导入
-    4.使用jpush完成定时推送功能
+    4.使用local-push完成定时推送功能
 
 ## v1.0正式版计划
     1.完成所有的debug

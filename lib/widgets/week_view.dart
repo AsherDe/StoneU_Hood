@@ -1,6 +1,6 @@
 // lib/widgets/week_view.dart
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+// import 'package:intl/intl.dart';
 import '../models/event.dart';
 import '../constants/theme_constants.dart';
 
@@ -71,9 +71,9 @@ class WeekView extends StatelessWidget {
                   SizedBox(
                     width: TIME_COLUMN_WIDTH,
                     child: Padding(
-                      padding: EdgeInsets.only(right: 8),
+                      padding: EdgeInsets.only(right: 8, top: 0),
                       child: Align(
-                        alignment: Alignment.centerRight,
+                        alignment: Alignment.topRight,
                         child: Text(
                           '$hour:00',
                           style: ThemeConstants.getUpcomingTextStyle(),
@@ -145,31 +145,31 @@ class WeekView extends StatelessWidget {
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
-                      maxLines: 1,
+                      maxLines: 5,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (height > 40) // 只在足够高的事件中显示时间
-                      Text(
-                        '${DateFormat('HH:mm').format(event.startTime)} - ${DateFormat('HH:mm').format(event.endTime)}',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
-                          fontSize: 10,
-                        ),
-                      ),
-                    if (height > 60 && event.notes.isNotEmpty)
-                      Padding(
-                        padding: EdgeInsets.only(top:4),
-                        child:Text(
-                          event.notes,
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
-                            fontSize: 10,
-                            fontStyle: FontStyle.italic,
-                          ),
-                          maxLines: (height > 100) ? 3:1,
-                          overflow: TextOverflow.ellipsis,
-                        )
-                      )
+                    // if (height > 40) // 只在足够高的事件中显示时间
+                    //   Text(
+                    //     '${DateFormat('HH:mm').format(event.startTime)} - ${DateFormat('HH:mm').format(event.endTime)}',
+                    //     style: TextStyle(
+                    //       color: Colors.white.withOpacity(0.8),
+                    //       fontSize: 10,
+                    //     ),
+                    //   ),
+                    // if (height > 60 && event.notes.isNotEmpty)
+                    //   Padding(
+                    //     padding: EdgeInsets.only(top:4),
+                    //     child:Text(
+                    //       event.notes,
+                    //       style: TextStyle(
+                    //         color: Colors.white.withOpacity(0.7),
+                    //         fontSize: 10,
+                    //         fontStyle: FontStyle.italic,
+                    //       ),
+                    //       maxLines: (height > 100) ? 3:1,
+                    //       overflow: TextOverflow.ellipsis,
+                    //     )
+                    //   )
                   ],
                 ),
               ),
