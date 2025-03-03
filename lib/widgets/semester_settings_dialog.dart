@@ -4,10 +4,12 @@ import 'package:intl/intl.dart';
 
 class SemesterSettingsDialog extends StatefulWidget {
   final DateTime? currentFirstWeek;
+  final bool isFirstTime;
   
   const SemesterSettingsDialog({
     Key? key,
     this.currentFirstWeek,
+    this.isFirstTime = false,
   }) : super(key: key);
 
   @override
@@ -20,7 +22,12 @@ class _SemesterSettingsDialogState extends State<SemesterSettingsDialog> {
   @override
   void initState() {
     super.initState();
-    selectedDate = widget.currentFirstWeek ?? DateTime.now();
+    if(widget.isFirstTime) {
+      final now = DateTime.now();
+      selectedDate = now.subtract(Duration(days: now.weekday - 1));
+    } else {
+      selectedDate = widget.currentFirstWeek ?? DateTime.now();
+    }
   }
 
   @override
@@ -30,6 +37,18 @@ class _SemesterSettingsDialogState extends State<SemesterSettingsDialog> {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // 如果是首次启动，显示欢迎信息
+          if (widget.isFirstTime)
+            Padding(
+              padding: EdgeInsets.only(bottom: 16),
+              child: Text(
+                '欢迎使用石大日历！请设置本学期的第一周开始日期。',
+                style: TextStyle(
+                  color: Colors.blue, // 使用主题颜色
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
           Text('请选择本学期的第一周的周一日期：'),
           ListTile(
             title: Text('选择日期'),
@@ -55,10 +74,11 @@ class _SemesterSettingsDialogState extends State<SemesterSettingsDialog> {
         ],
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text('取消'),
-        ),
+        if (!widget.isFirstTime)
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('取消'),
+          ),
         TextButton(
           onPressed: () => Navigator.pop(context, selectedDate),
           child: Text('确定'),

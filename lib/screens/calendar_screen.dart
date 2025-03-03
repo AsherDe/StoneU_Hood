@@ -43,7 +43,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
     });
     _checkSemesterSettings();
     _notificationService.initialize();
-    _scrollStateManager.setDefaultScrollForPage(_currentPage, 8 * WeekView.HOUR_HEIGHT);
 
     // 加载事件
     _loadEvents();
@@ -90,10 +89,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   Future<void> _checkSemesterSettings() async {
+    final isFirstLaunch = await EventRepository().isFirstLaunch();
     final firstWeekDate = await EventRepository().getActiveFirstWeekDate();
     
-    if (firstWeekDate == null) {
-      _showSemesterSettingsDialog();
+    if (isFirstLaunch || firstWeekDate == null) {
+      await Future.delayed(Duration(milliseconds: 300));
+
+      _showSemesterSettingsDialog(isFirstTime: true);
       return;
     }
 
@@ -106,14 +108,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
   }
 
-  Future<void> _showSemesterSettingsDialog() async {
+  Future<void> _showSemesterSettingsDialog({bool isFirstTime = false}) async {
     final currentFirstWeek = await EventRepository().getActiveFirstWeekDate();
     
     final result = await showDialog<DateTime>(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: false, // 防止误点击对话框外部关闭对话框
       builder: (context) => SemesterSettingsDialog(
         currentFirstWeek: currentFirstWeek,
+        isFirstTime: isFirstTime,
       ),
     );
 
@@ -122,6 +125,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
       setState(() {
         // 刷新界面
       });
+    } else if (isFirstTime) {
+      _showSemesterSettingsDialog(isFirstTime: true);
     }
   }
 
@@ -130,7 +135,53 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   double _calculateInitialScrollOffset() {
-    return 0;
+    final now = DateTime.now();
+    final weekDays = _getWeekDaysForPage(_currentPage);
+    final events = _getEventsForWeek(weekDays);
+    
+    // First check if we have any events in early hours
+    Map<int, bool> hoursWithEvents = {};
+    for (int hour = 0; hour < 24; hour++) {
+      hoursWithEvents[hour] = false;
+    }
+
+    // Mark hours that have events
+    for (final event in events) {
+      if (weekDays.any((day) => 
+        day.year == event.startTime.year && 
+        day.month == event.startTime.month && 
+        day.day == event.startTime.day)) {
+        
+        int startHour = event.startTime.hour;
+        int endHour = event.endTime.hour;
+        if (event.endTime.minute == 0 && endHour > startHour) {
+          endHour--;
+        }
+        
+        for (int hour = startHour; hour <= endHour; hour++) {
+          hoursWithEvents[hour] = true;
+        }
+      }
+    }
+
+    // Calculate position
+    double position = 0;
+    for (int hour = 0; hour < now.hour; hour++) {
+      if (hour >= 0 && hour < 8) {
+        position += hoursWithEvents[hour]! 
+            ? WeekView.STANDARD_HOUR_HEIGHT 
+            : WeekView.COMPRESSED_HOUR_HEIGHT;
+      } else {
+        position += WeekView.STANDARD_HOUR_HEIGHT;
+      }
+    }
+    
+    // Add current minute offset
+    position += (now.minute / 60.0) * WeekView.STANDARD_HOUR_HEIGHT;
+    
+    // Center in screen
+    return position - (MediaQuery.of(context).size.height / 2);
+  
   }
 
   // Get the date for a specific page index
@@ -164,9 +215,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
       _currentPage = page;
       _selectedDate = _getDateForPage(page);
     });
-    
-    // 每个页面使用固定8点位置
-    _scrollStateManager.setDefaultScrollForPage(page, 8 * WeekView.HOUR_HEIGHT);
 
     // Restore the scroll position for this page
     _scrollStateManager.restoreScrollPosition(page);
