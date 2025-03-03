@@ -114,7 +114,7 @@ class NotificationService {
         );
 
         // 生成唯一的通知ID - 使用正整数值
-        final notificationId = '${event.hashCode}_$minutes'.hashCode.abs();
+        final notificationId = '${event.id}_$minutes'.hashCode;
 
         await _notifications.zonedSchedule(
           notificationId,
@@ -143,7 +143,7 @@ class NotificationService {
     try {
       // 取消该事件的所有提醒通知
       for (int minutes in event.reminderMinutes) {
-        final notificationId = '${event.hashCode}_$minutes'.hashCode.abs();
+        final notificationId = '${event.id}_$minutes'.hashCode;
         await _notifications.cancel(notificationId);
       }
     } catch (e) {

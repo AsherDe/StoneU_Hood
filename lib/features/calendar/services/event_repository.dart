@@ -73,7 +73,7 @@ class EventRepository {
   Future<void> insertEvent(CalendarEvent event) async {
     final db = await database;
     await db.insert('events', {
-      'id': event.hashCode.toString(),
+      'id': event.id,
       'title': event.title,
       'notes': event.notes,
       'startTime': event.startTime.toIso8601String(),
@@ -88,6 +88,7 @@ class EventRepository {
     final List<Map<String, dynamic>> maps = await db.query('events');
     return List.generate(maps.length, (i) {
       return CalendarEvent(
+        id: maps[i]['id'],
         title: maps[i]['title'],
         notes: maps[i]['notes'],
         startTime: DateTime.parse(maps[i]['startTime']),
@@ -107,7 +108,7 @@ class EventRepository {
     await db.delete(
       'events',
       where: 'id = ?',
-      whereArgs: [event.hashCode.toString()],
+      whereArgs: [event.id],
     );
   }
 

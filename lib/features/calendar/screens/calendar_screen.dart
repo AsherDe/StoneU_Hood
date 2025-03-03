@@ -258,7 +258,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   ]) {
     return _events.any((event) {
       // 如果是正在编辑的事件，跳过冲突检查
-      if (excludeEvent != null && event.hashCode == excludeEvent.hashCode) {
+      if (excludeEvent != null && event.id == excludeEvent.id) {
         return false;
       }
 
@@ -706,7 +706,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                         fontSize: 12,
                                         color: Colors.grey[700],
                                       ),
-                                      maxLines: 2,
+                                      maxLines: 3,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   SizedBox(height: 20),
@@ -1038,7 +1038,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           await EventRepository().updateEvent(event);
                           setState(() {
                             final index = _events.indexWhere(
-                              (e) => e.hashCode == eventToEdit.hashCode,
+                              (e) => e.hashCode == eventToEdit.id,
                             );
                             if (index != -1) {
                               _events[index] = event;
