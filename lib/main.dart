@@ -1,7 +1,7 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'screens/calendar_screen.dart';
+import 'features/calendar/screens/calendar_screen.dart';
 
 void main() {
   runApp(MyApp());

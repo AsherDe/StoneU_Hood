@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 // import 'package:intl/intl.dart';
 import '../models/event.dart';
-import '../constants/theme_constants.dart';
+import '../../../core/constants/theme_constants.dart';
 
 class WeekView extends StatefulWidget {
   final List<DateTime> weekDays;

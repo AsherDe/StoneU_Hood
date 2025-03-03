@@ -1,7 +1,7 @@
 // lib/widgets/week_indicator.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../constants/theme_constants.dart';
+import '../../../core/constants/theme_constants.dart';
 
 class WeekIndicator extends StatelessWidget {
   final DateTime startOfWeek;
