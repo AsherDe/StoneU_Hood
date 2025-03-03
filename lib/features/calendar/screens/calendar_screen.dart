@@ -227,16 +227,28 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   int _getCurrentWeekNumber() {
-    if (_startDate == null) return 0;
-
-    final difference = _selectedDate.difference(_startDate!).inDays;
-    final weekNumber = (difference / 7).floor() + 1;
-
-    // 确保周数在1-20之间
-    if (weekNumber < 1) return 1;
-    if (weekNumber > 20) return 20;
-    return weekNumber;
-  }
+  if (_startDate == null) return 0;
+  
+  // Get the date for the current page instead of using _selectedDate
+  final DateTime currentPageDate = _getDateForPage(_currentPage);
+  
+  // Calculate the difference from the start date
+  final DateTime mondayOfCurrentPage = currentPageDate.subtract(
+    Duration(days: currentPageDate.weekday - 1),
+  );
+  final DateTime mondayOfStartDate = _startDate!.subtract(
+    Duration(days: _startDate!.weekday - 1),
+  );
+  
+  // Calculate the week number based on the number of weeks between the dates
+  final int difference = mondayOfCurrentPage.difference(mondayOfStartDate).inDays;
+  final int weekNumber = (difference / 7).floor() + 1;
+  
+  // Ensure week number is within 1-20 range
+  if (weekNumber < 1) return 1;
+  if (weekNumber > 20) return 20;
+  return weekNumber;
+}
 
   // Get current week number based on a specific date
   int _getWeekNumberForDate(DateTime date) {
@@ -395,6 +407,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     final weekDifference = weekNum - currentWeekNum;
                     final targetPage = _currentPage + weekDifference;
 
+                    // Set the current page immediately to update UI
+                    setState(() {
+                      _currentPage = targetPage;
+                      _selectedDate = _getDateForPage(targetPage);
+                    });
                     // Animate to the selected week
                     _pageController.animateToPage(
                       targetPage,
