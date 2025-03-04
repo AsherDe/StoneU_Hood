@@ -5,8 +5,14 @@ import 'features/calendar/screens/calendar_screen.dart';
 import 'features/community/screens/home_screen.dart';
 import 'features/community/screens/chat_screen.dart';
 import 'features/community/screens/profile_screen.dart' as profile;
+import 'features/calendar/services/calendar_sync_service.dart';
 
-void main() {
+void main() async {
+  // 确保Flutter绑定初始化
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // 初始化日历同步服务
+  await CalendarSyncService().initialize();
   runApp(MyApp());
 }
 

@@ -1,4 +1,6 @@
 PODS:
+  - device_calendar (0.0.1):
+    - Flutter
   - Flutter (1.0.0)
   - flutter_local_notifications (0.0.1):
     - Flutter
@@ -16,6 +18,7 @@ PODS:
     - FlutterMacOS
 
 DEPENDENCIES:
+  - device_calendar (from `.symlinks/plugins/device_calendar/ios`)
   - Flutter (from `Flutter`)
   - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
@@ -24,6 +27,8 @@ DEPENDENCIES:
   - webview_flutter_wkwebview (from `.symlinks/plugins/webview_flutter_wkwebview/darwin`)
 
 EXTERNAL SOURCES:
+  device_calendar:
+    :path: ".symlinks/plugins/device_calendar/ios"
   Flutter:
     :path: Flutter
   flutter_local_notifications:
@@ -38,6 +43,7 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/webview_flutter_wkwebview/darwin"
 
 SPEC CHECKSUMS:
+  device_calendar: b55b2c5406cfba45c95a59f9059156daee1f74ed
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
   flutter_local_notifications: 395056b3175ba4f08480a7c5de30cd36d69827e4
   path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564

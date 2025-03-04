@@ -12,6 +12,9 @@ import '../services/timetable_webview.dart';
 import '../services/notification_service.dart';
 import '../utils/scroll_state_manager.dart';
 import '../widgets/week_indicator.dart';
+import 'donation_page.dart';
+import 'settings_screen.dart';
+import '../services/calendar_sync_service.dart';
 
 class CalendarScreen extends StatefulWidget {
   @override
@@ -46,7 +49,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     _notificationService.initialize();
 
     // 加载事件
-    _loadEvents();
+    _initializeData();
   }
 
   Future<void> _loadEvents() async {
@@ -57,7 +60,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   Future<void> _loadStartDate() async {
-    final startDate = await EventRepository().getStartDate();
+    final startDate = await EventRepository().getActiveFirstWeekDate();
     setState(() {
       _startDate = startDate;
     });
@@ -74,9 +77,26 @@ class _CalendarScreenState extends State<CalendarScreen> {
     if (date != null) {
       // 将日期调整到那一周的周一
       final monday = date.subtract(Duration(days: date.weekday - 1));
-      await EventRepository().setStartDate(monday);
+      await EventRepository().setFirstWeekDate(monday);
       setState(() {
         _startDate = monday;
+      });
+    }
+  }
+
+  Future<void> _initializeData() async {
+    // Load start date first
+    await _loadStartDate();
+
+    // Then check semester settings
+    await _checkSemesterSettings();
+
+    // Finally load events
+    await _loadEvents();
+
+    if (mounted) {
+      setState(() {
+        // Update UI once all data is loaded
       });
     }
   }
@@ -124,6 +144,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
     if (result != null) {
       await EventRepository().setFirstWeekDate(result);
+      await _loadStartDate();
       setState(() {
         // 刷新界面
       });
@@ -227,28 +248,29 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   int _getCurrentWeekNumber() {
-  if (_startDate == null) return 0;
-  
-  // Get the date for the current page instead of using _selectedDate
-  final DateTime currentPageDate = _getDateForPage(_currentPage);
-  
-  // Calculate the difference from the start date
-  final DateTime mondayOfCurrentPage = currentPageDate.subtract(
-    Duration(days: currentPageDate.weekday - 1),
-  );
-  final DateTime mondayOfStartDate = _startDate!.subtract(
-    Duration(days: _startDate!.weekday - 1),
-  );
-  
-  // Calculate the week number based on the number of weeks between the dates
-  final int difference = mondayOfCurrentPage.difference(mondayOfStartDate).inDays;
-  final int weekNumber = (difference / 7).floor() + 1;
-  
-  // Ensure week number is within 1-20 range
-  if (weekNumber < 1) return 1;
-  if (weekNumber > 20) return 20;
-  return weekNumber;
-}
+    if (_startDate == null) return 0;
+
+    // Get the date for the current page instead of using _selectedDate
+    final DateTime currentPageDate = _getDateForPage(_currentPage);
+
+    // Calculate the difference from the start date
+    final DateTime mondayOfCurrentPage = currentPageDate.subtract(
+      Duration(days: currentPageDate.weekday - 1),
+    );
+    final DateTime mondayOfStartDate = _startDate!.subtract(
+      Duration(days: _startDate!.weekday - 1),
+    );
+
+    // Calculate the week number based on the number of weeks between the dates
+    final int difference =
+        mondayOfCurrentPage.difference(mondayOfStartDate).inDays;
+    final int weekNumber = (difference / 7).floor() + 1;
+
+    // Ensure week number is within 1-20 range
+    if (weekNumber < 1) return 1;
+    if (weekNumber > 20) return 20;
+    return weekNumber;
+  }
 
   // Get current week number based on a specific date
   int _getWeekNumberForDate(DateTime date) {
@@ -537,14 +559,78 @@ class _CalendarScreenState extends State<CalendarScreen> {
             tooltip: '使用帮助',
           ),
           IconButton(
-            icon: Icon(Icons.file_upload, color: ThemeConstants.currentColor),
-            onPressed: _handleImport,
-            tooltip: '导入课表',
+            icon: Icon(Icons.settings, color: ThemeConstants.currentColor),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => SettingsScreen()),
+              ).then((_) {
+                // 返回后刷新数据
+                _loadEvents();
+              });
+            },
+            tooltip: '设置',
           ),
           IconButton(
             icon: Icon(Icons.add, color: ThemeConstants.currentColor),
             onPressed: _showAddEventDialog,
             tooltip: '添加事件',
+          ),
+          PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert, color: ThemeConstants.currentColor),
+            tooltip: '更多选项',
+            onSelected: (value) {
+              switch (value) {
+                case 'import':
+                  _handleImport();
+                  break;
+                case 'about':
+                  _showAboutDialog();
+                  break;
+                case 'donate':
+                  _navigateToDonationPage();
+                  break;
+              }
+            },
+            itemBuilder:
+                (context) => [
+                  PopupMenuItem(
+                    value: 'import',
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.file_upload,
+                          color: ThemeConstants.currentColor,
+                        ),
+                        SizedBox(width: 8),
+                        Text('导入课表'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'donate',
+                    child: Row(
+                      children: [
+                        Icon(Icons.coffee, color: ThemeConstants.currentColor),
+                        SizedBox(width: 8),
+                        Text('请作者喝杯奶茶'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'about',
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: ThemeConstants.currentColor,
+                        ),
+                        SizedBox(width: 8),
+                        Text('关于'),
+                      ],
+                    ),
+                  ),
+                ],
           ),
         ],
       ),
@@ -969,7 +1055,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           try {
                             await EventRepository().deleteEvent(eventToEdit);
                             // Cancel associated notifications
-                            await _notificationService.cancelEventNotifications(eventToEdit);
+                            await _notificationService.cancelEventNotifications(
+                              eventToEdit,
+                            );
 
                             await _loadEvents();
 
@@ -983,7 +1071,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           }
                           // Handle navigation more carefully
                           if (Navigator.of(context).canPop()) {
-                            Navigator.of(context).pop(); // Close confirmation dialog
+                            Navigator.of(
+                              context,
+                            ).pop(); // Close confirmation dialog
                           }
                           if (Navigator.of(context).canPop()) {
                             Navigator.of(context).pop(); // Close edit dialog
@@ -1166,5 +1256,77 @@ class _CalendarScreenState extends State<CalendarScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text('导入失败：${e.toString()}')));
     }
+
+    final syncService = CalendarSyncService();
+    if (syncService.isSyncEnabled()) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder:
+            (context) => AlertDialog(
+              title: Text('正在同步到系统日历'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('正在将课程同步到系统日历，请稍候...'),
+                ],
+              ),
+            ),
+      );
+
+      // 执行同步
+      final syncCount = await EventRepository().syncAllUnsyncedEvents();
+
+      // 关闭进度对话框
+      Navigator.of(context).pop();
+
+      // 显示同步结果
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('已同步 $syncCount 个课程到系统日历')));
+    }
+  }
+
+  void _showAboutDialog() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('关于石大日历'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('石大日历是为石河子大学本科生设计的日程管理应用。现在整合到了石大时光圈。'),
+                SizedBox(height: 8),
+                Text('版本: 1.0.0'),
+                SizedBox(height: 8),
+                Text('功能:'),
+                Text('• 课程表导入与显示'),
+                Text('• 自定义事件管理'),
+                Text('• 事件提醒'),
+                Text('• 周次与日期管理'),
+                SizedBox(height: 16),
+                Text('商业合作/引流请联系我'),
+                Text('开发者: 吉育德'),
+                Text('联系方式: asher.ji@icloud.com'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('关闭'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _navigateToDonationPage() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => DonationPage()));
   }
 }

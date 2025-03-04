@@ -1,10 +1,13 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/event.dart';
+import 'calendar_sync_service.dart';
 
 class EventRepository {
   static Database? _database;
-
+  // 添加并初始化_syncService变量
+  final CalendarSyncService _syncService = CalendarSyncService();
+  
   Future<Database> get database async {
     _database ??= await _initDatabase();
     return _database!;
@@ -14,7 +17,7 @@ class EventRepository {
     String path = join(await getDatabasesPath(), 'calendar.db');
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE events(
@@ -26,7 +29,8 @@ class EventRepository {
             reminderMinutes TEXT,
             color TEXT,
             first_week_date TEXT NOT NULL,
-            is_active INTEGER NOT NULL DEFAULT 0
+            is_active INTEGER NOT NULL DEFAULT 0,
+            synced INTEGER DEFAULT 0
           )
         ''');
 
@@ -36,42 +40,36 @@ class EventRepository {
             value TEXT
           )
         ''');
+
+        await db.execute('''
+        CREATE TABLE semester_settings(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          first_week_date TEXT NOT NULL,
+          is_active INTEGER DEFAULT 0
+        )
+      ''');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 2) {
+        if (oldVersion < 3) {
           await db.execute('''
             CREATE TABLE settings(
               key TEXT PRIMARY KEY,
               value TEXT
             )
           ''');
+          await db.execute(
+            'ALTER TABLE events ADD COLUMN synced INTEGER DEFAULT 0',
+          );
         }
       },
     );
   }
 
-  Future<void> setStartDate(DateTime startDate) async {
-    final db = await database;
-    await db.insert('settings', {
-      'key': 'start_date',
-      'value': startDate.toIso8601String(),
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
-  }
-
-  Future<DateTime?> getStartDate() async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'settings',
-      where: 'key = ?',
-      whereArgs: ['start_date'],
-    );
-
-    if (maps.isEmpty) return null;
-    return DateTime.parse(maps.first['value']);
-  }
-
   Future<void> insertEvent(CalendarEvent event) async {
     final db = await database;
+    
+    final firstWeekDate = await getActiveFirstWeekDate();
+    // 在本地数据库中插入事件
     await db.insert('events', {
       'id': event.id,
       'title': event.title,
@@ -80,7 +78,24 @@ class EventRepository {
       'endTime': event.endTime.toIso8601String(),
       'reminderMinutes': event.reminderMinutes.join(','),
       'color': event.color,
+      'synced': 0,
+      'first_week_date': firstWeekDate?.toIso8601String() ?? DateTime.now().toString(),
+      'is_active': 0,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
+    
+    // 如果启用了同步，则同步到系统日历
+    if (_syncService.isSyncEnabled()) {
+      final success = await _syncService.syncEventToSystem(event);
+      if (success) {
+        // 更新同步状态
+        await db.update(
+          'events',
+          {'synced': 1},
+          where: 'id = ?',
+          whereArgs: [event.id],
+        );
+      }
+    }
   }
 
   Future<List<CalendarEvent>> getEvents() async {
@@ -105,11 +120,11 @@ class EventRepository {
 
   Future<void> deleteEvent(CalendarEvent event) async {
     final db = await database;
-    await db.delete(
-      'events',
-      where: 'id = ?',
-      whereArgs: [event.id],
-    );
+    // 如果启用了同步，则从系统日历中删除
+    if (_syncService.isSyncEnabled()) {
+      await _syncService.deleteEventFromSystem(event);
+    }
+    await db.delete('events', where: 'id = ?', whereArgs: [event.id]);
   }
 
   Future<void> updateEvent(CalendarEvent event) async {
@@ -119,14 +134,19 @@ class EventRepository {
 
   Future<DateTime?> getActiveFirstWeekDate() async {
     final db = await database;
-    final result = await db.query(
-      'semester_settings',
-      where: 'is_active = 1',
-      limit: 1,
-    );
+    try {
+      final result = await db.query(
+        'semester_settings',
+        where: 'is_active = 1',
+        limit: 1,
+      );
 
-    if (result.isEmpty) return null;
-    return DateTime.parse(result.first['first_week_date'] as String);
+      if (result.isEmpty) return null;
+      return DateTime.parse(result.first['first_week_date'] as String);
+    } catch (e) {
+      // 表不存在或其他错误
+      return null;
+    }
   }
 
   Future<void> setFirstWeekDate(DateTime date) async {
@@ -143,6 +163,49 @@ class EventRepository {
         'is_active': 1,
       });
     });
+  }
+
+  // 同步所有未同步的事件到系统日历
+  Future<int> syncAllUnsyncedEvents() async {
+    if (!_syncService.isSyncEnabled()) {
+      return 0;
+    }
+    
+    final db = await database;
+    final unsyncedEvents = await db.query(
+      'events',
+      where: 'synced = ?',
+      whereArgs: [0],
+    );
+    
+    final events = unsyncedEvents.map((map) => CalendarEvent(
+      id: map['id'] as String,
+      title: map['title'] as String,
+      notes: map['notes'] as String,
+      startTime: DateTime.parse(map['startTime'] as String),
+      endTime: DateTime.parse(map['endTime'] as String),
+      reminderMinutes: (map['reminderMinutes'] as String)
+          .split(',')
+          .map<int>((e) => int.parse(e))
+          .toList(),
+      color: map['color'] as String,
+    )).toList();
+    
+    int successCount = await _syncService.syncMultipleEvents(events);
+    
+    // 更新同步状态
+    if (successCount > 0) {
+      for (var event in events) {
+        await db.update(
+          'events',
+          {'synced': 1},
+          where: 'id = ?',
+          whereArgs: [event.id],
+        );
+      }
+    }
+    
+    return successCount;
   }
 
   Future<bool> isFirstLaunch() async {
