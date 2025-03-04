@@ -4,10 +4,11 @@ import 'models/marketplace_item.dart';
 import 'models/study_material.dart';
 import 'services/community_service.dart';
 import '../calendar/models/event.dart';
+import 'dart:io';
 
 class CommunityController extends ChangeNotifier {
   final CommunityService _service = CommunityService();
-  
+
   // Marketplace Items
   List<MarketplaceItem> _marketplaceItems = [];
   List<MarketplaceItem> _featuredItems = [];
@@ -15,7 +16,7 @@ class CommunityController extends ChangeNotifier {
   bool _isLoadingItems = false;
   String? _itemSearchQuery;
   ItemCategory? _selectedCategory;
-  
+
   // Study Materials
   List<StudyMaterial> _studyMaterials = [];
   List<StudyMaterial> _trendingMaterials = [];
@@ -24,41 +25,42 @@ class CommunityController extends ChangeNotifier {
   String? _materialSearchQuery;
   StudyMaterialType? _selectedMaterialType;
   String? _selectedSubject;
-  
+
   // User
   UserProfile? _currentUser;
   bool _isLoadingUser = false;
-  
+
   // Chat
   List<ChatConversation> _conversations = [];
   Map<String, List<ChatMessage>> _messagesByConversation = {};
   bool _isLoadingChats = false;
-  
+
   // Calendar
   List<CalendarEvent> _communityEvents = [];
   bool _isLoadingEvents = false;
-  
+
   // Getters
   List<MarketplaceItem> get marketplaceItems => _marketplaceItems;
   List<MarketplaceItem> get featuredItems => _featuredItems;
   List<String> get favoriteItemIds => _favoriteItemIds;
   bool get isLoadingItems => _isLoadingItems;
-  
+
   List<StudyMaterial> get studyMaterials => _studyMaterials;
   List<StudyMaterial> get trendingMaterials => _trendingMaterials;
   List<String> get favoriteMaterialIds => _favoriteMaterialIds;
   bool get isLoadingMaterials => _isLoadingMaterials;
-  
+
   UserProfile? get currentUser => _currentUser;
   bool get isLoadingUser => _isLoadingUser;
-  
+
   List<ChatConversation> get conversations => _conversations;
-  Map<String, List<ChatMessage>> get messagesByConversation => _messagesByConversation;
+  Map<String, List<ChatMessage>> get messagesByConversation =>
+      _messagesByConversation;
   bool get isLoadingChats => _isLoadingChats;
-  
+
   List<CalendarEvent> get communityEvents => _communityEvents;
   bool get isLoadingEvents => _isLoadingEvents;
-  
+
   // Filtered Items
   List<MarketplaceItem> get filteredMarketplaceItems {
     return _marketplaceItems.where((item) {
@@ -66,71 +68,84 @@ class CommunityController extends ChangeNotifier {
       if (_selectedCategory != null && item.category != _selectedCategory) {
         return false;
       }
-      
+
       // Apply search filter
       if (_itemSearchQuery != null && _itemSearchQuery!.isNotEmpty) {
-        return item.title.toLowerCase().contains(_itemSearchQuery!.toLowerCase()) ||
-            item.description.toLowerCase().contains(_itemSearchQuery!.toLowerCase());
+        return item.title.toLowerCase().contains(
+              _itemSearchQuery!.toLowerCase(),
+            ) ||
+            item.description.toLowerCase().contains(
+              _itemSearchQuery!.toLowerCase(),
+            );
       }
-      
+
       return true;
     }).toList();
   }
-  
+
   List<StudyMaterial> get filteredStudyMaterials {
     return _studyMaterials.where((material) {
       // Apply material type filter
-      if (_selectedMaterialType != null && material.materialType != _selectedMaterialType) {
+      if (_selectedMaterialType != null &&
+          material.materialType != _selectedMaterialType) {
         return false;
       }
-      
+
       // Apply subject filter
       if (_selectedSubject != null && material.subject != _selectedSubject) {
         return false;
       }
-      
+
       // Apply search filter
       if (_materialSearchQuery != null && _materialSearchQuery!.isNotEmpty) {
-        return material.title.toLowerCase().contains(_materialSearchQuery!.toLowerCase()) ||
-            material.description.toLowerCase().contains(_materialSearchQuery!.toLowerCase()) ||
-            material.tags.any((tag) => tag.toLowerCase().contains(_materialSearchQuery!.toLowerCase()));
+        return material.title.toLowerCase().contains(
+              _materialSearchQuery!.toLowerCase(),
+            ) ||
+            material.description.toLowerCase().contains(
+              _materialSearchQuery!.toLowerCase(),
+            ) ||
+            material.tags.any(
+              (tag) => tag.toLowerCase().contains(
+                _materialSearchQuery!.toLowerCase(),
+              ),
+            );
       }
-      
+
       return true;
     }).toList();
   }
-  
+
   // Filter setters
   void setItemSearchQuery(String? query) {
     _itemSearchQuery = query;
     notifyListeners();
   }
-  
+
   void setSelectedCategory(ItemCategory? category) {
     _selectedCategory = category;
     notifyListeners();
   }
-  
+
   void setMaterialSearchQuery(String? query) {
     _materialSearchQuery = query;
     notifyListeners();
   }
-  
+
   void setSelectedMaterialType(StudyMaterialType? type) {
     _selectedMaterialType = type;
     notifyListeners();
   }
-  
+
   void setSelectedSubject(String? subject) {
     _selectedSubject = subject;
     notifyListeners();
   }
-  
+
   // Data loading methods
   Future<void> loadMarketplaceItems() async {
     _isLoadingItems = true;
     notifyListeners();
-    
+
     try {
       final items = await _service.getMarketplaceItems();
       _marketplaceItems = items;
@@ -142,7 +157,7 @@ class CommunityController extends ChangeNotifier {
       rethrow;
     }
   }
-  
+
   Future<void> loadFeaturedItems() async {
     try {
       final items = await _service.getFeaturedMarketplaceItems();
@@ -153,11 +168,11 @@ class CommunityController extends ChangeNotifier {
       rethrow;
     }
   }
-  
+
   Future<void> loadStudyMaterials() async {
     _isLoadingMaterials = true;
     notifyListeners();
-    
+
     try {
       final materials = await _service.getStudyMaterials();
       _studyMaterials = materials;
@@ -169,7 +184,7 @@ class CommunityController extends ChangeNotifier {
       rethrow;
     }
   }
-  
+
   Future<void> loadTrendingMaterials() async {
     try {
       final materials = await _service.getTrendingStudyMaterials();
@@ -180,7 +195,7 @@ class CommunityController extends ChangeNotifier {
       rethrow;
     }
   }
-  
+
   Future<void> loadFavorites() async {
     try {
       _favoriteItemIds = await _service.getFavoriteItemIds();
@@ -191,7 +206,7 @@ class CommunityController extends ChangeNotifier {
       rethrow;
     }
   }
-  
+
   Future<bool> toggleFavoriteItem(String itemId) async {
     try {
       final result = await _service.toggleFavoriteItem(itemId);
@@ -204,7 +219,7 @@ class CommunityController extends ChangeNotifier {
       rethrow;
     }
   }
-  
+
   Future<bool> toggleFavoriteMaterial(String materialId) async {
     try {
       final result = await _service.toggleFavoriteMaterial(materialId);
@@ -217,12 +232,12 @@ class CommunityController extends ChangeNotifier {
       rethrow;
     }
   }
-  
+
   // User methods
   Future<void> loadCurrentUser() async {
     _isLoadingUser = true;
     notifyListeners();
-    
+
     try {
       _currentUser = await _service.getCurrentUser();
       _isLoadingUser = false;
@@ -233,11 +248,11 @@ class CommunityController extends ChangeNotifier {
       rethrow;
     }
   }
-  
+
   Future<bool> login(String email, String password) async {
     _isLoadingUser = true;
     notifyListeners();
-    
+
     try {
       final result = await _service.login(email, password);
       if (result) {
@@ -252,7 +267,7 @@ class CommunityController extends ChangeNotifier {
       rethrow;
     }
   }
-  
+
   Future<bool> logout() async {
     try {
       final result = await _service.logout();
@@ -266,12 +281,12 @@ class CommunityController extends ChangeNotifier {
       rethrow;
     }
   }
-  
+
   // Chat methods
   Future<void> loadConversations() async {
     _isLoadingChats = true;
     notifyListeners();
-    
+
     try {
       final conversations = await _service.getConversations();
       _conversations = conversations;
@@ -283,7 +298,7 @@ class CommunityController extends ChangeNotifier {
       rethrow;
     }
   }
-  
+
   Future<void> loadMessages(String conversationId) async {
     try {
       final messages = await _service.getMessages(conversationId);
@@ -294,7 +309,7 @@ class CommunityController extends ChangeNotifier {
       rethrow;
     }
   }
-  
+
   Future<bool> sendMessage(String conversationId, String text) async {
     try {
       final result = await _service.sendMessage(conversationId, text);
@@ -310,12 +325,12 @@ class CommunityController extends ChangeNotifier {
       rethrow;
     }
   }
-  
+
   // Calendar methods
   Future<void> loadCommunityEvents() async {
     _isLoadingEvents = true;
     notifyListeners();
-    
+
     try {
       final events = await _service.getCommunityEvents();
       _communityEvents = events;
@@ -327,7 +342,7 @@ class CommunityController extends ChangeNotifier {
       rethrow;
     }
   }
-  
+
   Future<bool> addEventToCalendar(CalendarEvent event) async {
     try {
       return await _service.addEventToCalendar(event);
@@ -336,7 +351,7 @@ class CommunityController extends ChangeNotifier {
       rethrow;
     }
   }
-  
+
   // Item management methods
   Future<bool> createMarketplaceItem(MarketplaceItem item) async {
     try {
@@ -351,7 +366,7 @@ class CommunityController extends ChangeNotifier {
       rethrow;
     }
   }
-  
+
   Future<bool> updateMarketplaceItem(MarketplaceItem item) async {
     try {
       final result = await _service.updateMarketplaceItem(item);
@@ -365,7 +380,7 @@ class CommunityController extends ChangeNotifier {
       rethrow;
     }
   }
-  
+
   Future<bool> deleteMarketplaceItem(String itemId) async {
     try {
       final result = await _service.deleteMarketplaceItem(itemId);
@@ -379,7 +394,7 @@ class CommunityController extends ChangeNotifier {
       rethrow;
     }
   }
-  
+
   Future<bool> createStudyMaterial(StudyMaterial material) async {
     try {
       final result = await _service.createStudyMaterial(material);
@@ -393,7 +408,7 @@ class CommunityController extends ChangeNotifier {
       rethrow;
     }
   }
-  
+
   Future<bool> updateStudyMaterial(StudyMaterial material) async {
     try {
       final result = await _service.updateStudyMaterial(material);
@@ -407,7 +422,7 @@ class CommunityController extends ChangeNotifier {
       rethrow;
     }
   }
-  
+
   Future<bool> deleteStudyMaterial(String materialId) async {
     try {
       final result = await _service.deleteStudyMaterial(materialId);
@@ -421,7 +436,7 @@ class CommunityController extends ChangeNotifier {
       rethrow;
     }
   }
-  
+
   // Initialize the controller - call this when the app starts
   Future<void> initialize() async {
     try {
@@ -430,7 +445,7 @@ class CommunityController extends ChangeNotifier {
       if (isLoggedIn) {
         await loadCurrentUser();
       }
-      
+
       // Load initial data
       await Future.wait([
         loadMarketplaceItems(),
@@ -445,5 +460,49 @@ class CommunityController extends ChangeNotifier {
       // Handle initialization error
       print('Failed to initialize community controller: $e');
     }
+  }
+
+  // lib/features/community/community_controller.dart
+  // 添加以下方法
+
+  Future<Map<String, dynamic>> signup(
+    String name,
+    String email,
+    String password, {
+    String? phone,
+    String? department,
+    String? grade,
+  }) async {
+    try {
+      return await _service.signup(
+        name,
+        email,
+        password,
+        phone: phone,
+        department: department,
+        grade: grade,
+      );
+    } catch (e) {
+      print('注册失败: $e');
+      return {'success': false, 'message': '注册过程中发生错误'};
+    }
+  }
+
+  Future<String?> parseCalendar(File calendarFile) async {
+    return await _service.parseCalendar(calendarFile);
+  }
+
+  Future<Map<String, dynamic>> verifyWithCalendar(
+    String userId,
+    String calendarData,
+  ) async {
+    return await _service.verifyWithCalendar(userId, calendarData);
+  }
+
+  Future<Map<String, dynamic>> uploadStudentCard(
+    String userId,
+    File imageFile,
+  ) async {
+    return await _service.uploadStudentCard(userId, imageFile);
   }
 }

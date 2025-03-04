@@ -2,13 +2,80 @@
 import 'dart:math';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
 import 'package:flutter/material.dart' hide MaterialType;
 import '../models/marketplace_item.dart';
 import '../models/study_material.dart';
 import '../../calendar/models/event.dart';
+import 'package:http/http.dart' as http;
+
+
+// User Profile Model
+class UserProfile {
+  final String id;
+  final String name;
+  final String email;
+  final String? avatar;
+  final String department;
+  final String grade;
+  
+  UserProfile({
+    required this.id,
+    required this.name,
+    required this.email,
+    this.avatar,
+    required this.department,
+    required this.grade,
+  });
+}
+
+// Chat Models
+class ChatConversation {
+  final String id;
+  final String userId;
+  final String userName;
+  final String lastMessage;
+  final DateTime timestamp;
+  final int unreadCount;
+  final String? userAvatar;
+  
+  ChatConversation({
+    required this.id,
+    required this.userId,
+    required this.userName,
+    required this.lastMessage,
+    required this.timestamp,
+    required this.unreadCount,
+    this.userAvatar,
+  });
+}
+
+class ChatMessage {
+  final String id;
+  final String conversationId;
+  final String senderId;
+  final String text;
+  final DateTime timestamp;
+  final bool isRead;
+  
+  ChatMessage({
+    required this.id,
+    required this.conversationId,
+    required this.senderId,
+    required this.text,
+    required this.timestamp,
+    required this.isRead,
+  });
+  
+  bool get isMe => senderId == 'user_1'; // Current user ID hardcoded for demo
+}
 
 class CommunityService {
   // Singleton pattern for the service
+  // static final CommunityService _instance = CommunityService._internal();
+  final String baseUrl = 'http://localhost:3000/api';
+
+  // 单例模式
   static final CommunityService _instance = CommunityService._internal();
   
   factory CommunityService() {
@@ -17,26 +84,51 @@ class CommunityService {
   
   CommunityService._internal();
   
-  // Mock user data
+  String? _authToken;
   String? _currentUserId;
-  Map<String, UserProfile> _users = {
+  final Map<String, UserProfile> _users = {
     'user_1': UserProfile(
       id: 'user_1',
-      name: '张同学',
+      name: '张三',
       email: 'zhang@edu.cn',
       avatar: null,
       department: '计算机科学与技术',
-      grade: '2023级',
+      grade: '大三',
+    ),
+    'user_2': UserProfile(
+      id: 'user_2',
+      name: '李四',
+      email: 'li@edu.cn',
+      avatar: null,
+      department: '电子信息工程',
+      grade: '大二',
     ),
   };
+
   // In a real app, these would fetch from a backend API
   Future<List<MarketplaceItem>> getMarketplaceItems() async {
-    // Simulate network delay
-    await Future.delayed(Duration(milliseconds: 800));
-    
-    // Return mock data
-    return _generateMockMarketplaceItems();
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/marketplace-items'),
+        headers: {
+          'Content-Type': 'application/json',
+          if (_authToken != null) 'Authorization': 'Bearer $_authToken',
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((item) => MarketplaceItem.fromJson(item)).toList();
+      } else {
+        throw Exception('获取物品失败: ${response.statusCode}');
+      }
+    } catch (e) {
+      // 如果API调用失败，可以返回模拟数据（备选方案）
+      print('API调用失败，使用模拟数据: $e');
+      return _generateMockMarketplaceItems();
+    }
   }
+
   
   Future<List<MarketplaceItem>> getFeaturedMarketplaceItems() async {
     // Simulate network delay
@@ -68,21 +160,42 @@ class CommunityService {
   
   // User Authentication Methods
   Future<bool> login(String email, String password) async {
-    // In a real app, this would validate credentials against a backend
-    await Future.delayed(Duration(milliseconds: 800));
-    
-    // Simulate successful login
-    if (email == 'zhang@edu.cn' && password == 'password') {
-      _currentUserId = 'user_1';
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'email': email,
+          'password': password,
+        }),
+      );
       
-      // Save login state
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('current_user_id', _currentUserId!);
-      
-      return true;
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success']) {
+          _currentUserId = data['user']['id'];
+          _authToken = data['token']; // 如果服务器返回token
+          
+          // 保存登录状态
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('current_user_id', _currentUserId!);
+          if (_authToken != null) {
+            await prefs.setString('auth_token', _authToken!);
+          }
+          
+          return true;
+        }
+      }
+      return false;
+    } catch (e) {
+      print('登录失败: $e');
+      // 测试期间可使用模拟逻辑作为备选
+      if (email == 'zhang@edu.cn' && password == 'password') {
+        _currentUserId = 'user_1';
+        return true;
+      }
+      return false;
     }
-    
-    return false;
   }
   
   Future<bool> checkLoggedIn() async {
@@ -464,64 +577,122 @@ class CommunityService {
       },
     );
   }
+
+Future<Map<String, dynamic>> signup(String name, String email, String password, 
+    {String? phone, String? department, String? grade}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('$baseUrl/signup'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'name': name,
+        'email': email,
+        'password': password,
+        'phone': phone,
+        'department': department,
+        'grade': grade,
+      }),
+    );
+    
+    final data = json.decode(response.body);
+    
+    if (response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': data['message'],
+        'userId': data['userId'],
+      };
+    } else {
+      return {
+        'success': false,
+        'message': data['message'] ?? '注册失败，请稍后重试',
+      };
+    }
+  } catch (e) {
+    print('注册失败: $e');
+    return {
+      'success': false,
+      'message': '网络错误，请检查网络连接',
+    };
+  }
 }
 
-// User Profile Model
-class UserProfile {
-  final String id;
-  final String name;
-  final String email;
-  final String? avatar;
-  final String department;
-  final String grade;
-  
-  UserProfile({
-    required this.id,
-    required this.name,
-    required this.email,
-    this.avatar,
-    required this.department,
-    required this.grade,
-  });
+Future<Map<String, dynamic>> verifyWithCalendar(String userId, String calendarData) async {
+  try {
+    final response = await http.post(
+      Uri.parse('$baseUrl/verify-with-calendar'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'userId': userId,
+        'calendarData': calendarData,
+      }),
+    );
+    
+    final data = json.decode(response.body);
+    
+    return {
+      'success': response.statusCode == 200 && data['success'] == true,
+      'message': data['message'],
+    };
+  } catch (e) {
+    print('课表验证失败: $e');
+    return {
+      'success': false,
+      'message': '网络错误，请检查网络连接',
+    };
+  }
 }
 
-// Chat Models
-class ChatConversation {
-  final String id;
-  final String userId;
-  final String userName;
-  final String lastMessage;
-  final DateTime timestamp;
-  final int unreadCount;
-  final String? userAvatar;
-  
-  ChatConversation({
-    required this.id,
-    required this.userId,
-    required this.userName,
-    required this.lastMessage,
-    required this.timestamp,
-    required this.unreadCount,
-    this.userAvatar,
-  });
+Future<Map<String, dynamic>> uploadStudentCard(String userId, File imageFile) async {
+  try {
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/upload-student-card'),
+    );
+    
+    request.fields['userId'] = userId;
+    request.files.add(await http.MultipartFile.fromPath(
+      'image', 
+      imageFile.path,
+    ));
+    
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    final data = json.decode(response.body);
+    
+    return {
+      'success': response.statusCode == 200 && data['success'] == true,
+      'message': data['message'],
+    };
+  } catch (e) {
+    print('上传学生证失败: $e');
+    return {
+      'success': false,
+      'message': '网络错误，请检查网络连接',
+    };
+  }
 }
 
-class ChatMessage {
-  final String id;
-  final String conversationId;
-  final String senderId;
-  final String text;
-  final DateTime timestamp;
-  final bool isRead;
-  
-  ChatMessage({
-    required this.id,
-    required this.conversationId,
-    required this.senderId,
-    required this.text,
-    required this.timestamp,
-    required this.isRead,
-  });
-  
-  bool get isMe => senderId == 'user_1'; // Current user ID hardcoded for demo
+Future<String?> parseCalendar(File calendarFile) async {
+  try {
+    // 这里实现日历解析逻辑
+    // 可以使用http上传到服务器解析，或在本地解析
+    
+    // 示例：仅作示意，实际需要根据您的日历格式开发
+    final calendarText = await calendarFile.readAsString();
+    if (calendarText.contains('课程') && calendarText.contains('时间')) {
+      // 解析成功，返回规范化的JSON字符串
+      return json.encode({
+        'courses': [
+          // 课程数据
+        ]
+      });
+    }
+    return null; // 解析失败
+  } catch (e) {
+    print('解析日历失败: $e');
+    return null;
+  }
 }
+}
+
