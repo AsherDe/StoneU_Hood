@@ -1,6 +1,5 @@
 // lib/widgets/week_view.dart
 import 'package:flutter/material.dart';
-// import 'package:intl/intl.dart';
 import '../models/event.dart';
 import '../../../core/constants/theme_constants.dart';
 
@@ -11,7 +10,6 @@ class WeekView extends StatefulWidget {
 
   static const double STANDARD_HOUR_HEIGHT = 60.0;
   static const double COMPRESSED_HOUR_HEIGHT = 20.0;
-  static const double TOTAL_HEIGHT = STANDARD_HOUR_HEIGHT * 24;
   static const double TIME_COLUMN_WIDTH = 50.0;
   static const double VERTICAL_LINE_WIDTH = 1.0;
   static const double TODAY_LINE_WIDTH = 2.0;
@@ -173,10 +171,14 @@ class _WeekViewState extends State<WeekView> {
                             '$hour:00',
                             style: ThemeConstants.getUpcomingTextStyle().copyWith(
                               // Make early morning hours with no events slightly lighter
-                              color: WeekView.EARLY_HOURS.contains(hour) && 
-                                    !_hoursWithEvents[hour]! 
-                                ? ThemeConstants.getUpcomingTextStyle().color!.withOpacity(0.6)
-                                : ThemeConstants.getUpcomingTextStyle().color
+                              color:
+                                  WeekView.EARLY_HOURS.contains(hour) &&
+                                          !_hoursWithEvents[hour]!
+                                      ? ThemeConstants.getUpcomingTextStyle()
+                                          .color!
+                                          .withOpacity(0.6)
+                                      : ThemeConstants.getUpcomingTextStyle()
+                                          .color,
                             ),
                           ),
                         ),
@@ -194,7 +196,10 @@ class _WeekViewState extends State<WeekView> {
                             top: 0,
                             bottom: 0,
                             child: Container(
-                              width: shouldBeBold ? WeekView.TODAY_LINE_WIDTH : WeekView.VERTICAL_LINE_WIDTH,
+                              width:
+                                  shouldBeBold
+                                      ? WeekView.TODAY_LINE_WIDTH
+                                      : WeekView.VERTICAL_LINE_WIDTH,
                               color: ThemeConstants.gridLineColor,
                             ),
                           );
@@ -209,13 +214,15 @@ class _WeekViewState extends State<WeekView> {
 
           // 事件层
           ...widget.events.map((event) {
-            final dayIndex = widget.weekDays.indexWhere((day) =>
-              day.year == event.startTime.year &&
-              day.month == event.startTime.month &&
-              day.day == event.startTime.day
+            final dayIndex = widget.weekDays.indexWhere(
+              (day) =>
+                  day.year == event.startTime.year &&
+                  day.month == event.startTime.month &&
+                  day.day == event.startTime.day,
             );
-            
-            if (dayIndex == -1) return Container(); // Skip if not in current week
+
+            if (dayIndex == -1)
+              return Container(); // Skip if not in current week
 
             final left = WeekView.TIME_COLUMN_WIDTH + (dayIndex * dayWidth);
             final top = _calculateTimePosition(event.startTime);
@@ -271,12 +278,12 @@ class _WeekViewState extends State<WeekView> {
                             ),
                             maxLines: (height > 100) ? 3 : 1,
                             overflow: TextOverflow.ellipsis,
-                          )
-                        )
+                          ),
+                        ),
                     ],
                   ),
                 ),
-              )
+              ),
             );
           }).toList(),
 

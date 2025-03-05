@@ -489,6 +489,53 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
+  double _calculateAppropriateHeight() {
+    final weekDays = _getWeekDaysForPage(_currentPage);
+    final events = _getEventsForWeek(weekDays);
+
+    // Track which hours have events
+    Map<int, bool> hoursWithEvents = {};
+    for (int hour = 0; hour < 24; hour++) {
+      hoursWithEvents[hour] = false;
+    }
+
+    // Mark hours that have events
+    for (final event in events) {
+      if (weekDays.any(
+        (day) =>
+            day.year == event.startTime.year &&
+            day.month == event.startTime.month &&
+            day.day == event.startTime.day,
+      )) {
+        int startHour = event.startTime.hour;
+        int endHour = event.endTime.hour;
+        if (event.endTime.minute == 0 && endHour > startHour) {
+          endHour--;
+        }
+
+        for (int hour = startHour; hour <= endHour; hour++) {
+          hoursWithEvents[hour] = true;
+        }
+      }
+    }
+
+    // Calculate total height
+    double totalHeight = 0;
+    for (int hour = 0; hour < 24; hour++) {
+      if (hour >= 0 && hour < 8) {
+        totalHeight +=
+            hoursWithEvents[hour]!
+                ? WeekView.STANDARD_HOUR_HEIGHT
+                : WeekView.COMPRESSED_HOUR_HEIGHT;
+      } else {
+        totalHeight += WeekView.STANDARD_HOUR_HEIGHT;
+      }
+    }
+
+    // Add 60 pixels of padding at the bottom
+    return totalHeight + 60;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isInitialScroll) {
@@ -736,7 +783,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           child: SingleChildScrollView(
                             controller: _scrollController,
                             child: SizedBox(
-                              height: WeekView.TOTAL_HEIGHT,
+                              height: _calculateAppropriateHeight(),
                               child: WeekView(
                                 weekDays: weekDays,
                                 events: _getEventsForWeek(weekDays),

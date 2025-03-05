@@ -4,12 +4,19 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../models/event.dart';
 import 'timetable_parser.dart';
 import '../services/event_repository.dart';
+import '../../community/services/auth_service.dart'; // Add this line to import AuthService
 
 class TimetableWebView extends StatefulWidget {
   final Function(List<CalendarEvent>) onEventsImported;
+  final String? userId; // 添加用户ID
+  final bool isVerification; // 标记是否为验证模式
 
-  const TimetableWebView({Key? key, required this.onEventsImported})
-    : super(key: key);
+  const TimetableWebView({
+    Key? key, 
+    required this.onEventsImported,
+    this.userId,
+    this.isVerification = false,
+    }): super(key: key);
 
   @override
   State<TimetableWebView> createState() => _TimetableWebViewState();
@@ -78,6 +85,7 @@ class _TimetableWebViewState extends State<TimetableWebView> {
   // 检查页面上是否有包含课表的iframe
   Future<void> _checkForTimetableIframes() async {
     try {
+      // Your code here
       final iframesCount = await _controller.runJavaScriptReturningResult(
         'document.querySelectorAll("iframe").length',
       );
@@ -206,7 +214,7 @@ class _TimetableWebViewState extends State<TimetableWebView> {
         });
         return;
       }
-      
+
       // Wait to ensure page is fully loaded
       await Future.delayed(const Duration(milliseconds: 800));
 
@@ -419,8 +427,8 @@ class _TimetableWebViewState extends State<TimetableWebView> {
       }
 
       // Debug: Log the first part of the HTML content
-      print('获取到HTML内容，长度: ${html.length}');
-      print('HTML前300字符: ${html.substring(0, min(300, html.length))}');
+      // print('获取到HTML内容，长度: ${html.length}');
+      // print('HTML前300字符: ${html.substring(0, min(300, html.length))}');
 
       // Parse timetable from HTML
       final events = TimetableParser.parseTimetable(html, startDate);
@@ -435,22 +443,43 @@ class _TimetableWebViewState extends State<TimetableWebView> {
         return;
       }
 
-      setState(() {
-        _statusMessage = '成功解析 ${events.length} 个课程';
-        _isLoading = false;
-      });
-
-      // Return the events to the parent widget
+      // 如果是验证模式且解析成功，设置用户为已验证
+      if (widget.isVerification && widget.userId != null && events.isNotEmpty) {
+        setState(() {
+          _statusMessage = '解析成功！正在验证用户...';
+        });
+        
+        try {
+          final authService = AuthService();
+          final success = await authService.setVerified(widget.userId!);
+          
+          if (success) {
+            setState(() {
+              _statusMessage = '验证成功！${events.length} 个课程已导入';
+            });
+            
+            // 显示成功消息
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('验证成功！您的账号已激活')),
+            );
+          } else {
+            setState(() {
+              _statusMessage = '课程导入成功，但用户验证失败，请重试';
+            });
+          }
+        } catch (e) {
+          setState(() {
+            _statusMessage = '验证过程中出错: $e';
+          });
+        }
+      }
+      // 返回events给调用者
       widget.onEventsImported(events);
     } catch (e) {
-      setState(() {
-        _statusMessage = '解析过程中出错: $e';
-        _isLoading = false;
-      });
-      print('Error parsing timetable: $e');
+      print('$e');
     }
   }
-
+  
   void _showTableDebugDialog() {
     showDialog(
       context: context,
