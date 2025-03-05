@@ -522,7 +522,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     // Calculate total height
     double totalHeight = 0;
     for (int hour = 0; hour < 24; hour++) {
-      if (hour >= 0 && hour < 8) {
+      if (hour >= 0 && hour < 24) {
         totalHeight +=
             hoursWithEvents[hour]!
                 ? WeekView.STANDARD_HOUR_HEIGHT
