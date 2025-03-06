@@ -1,7 +1,5 @@
 // lib/routes/app_router.dart
-import 'package:StoneU_Hood/features/community/models/user_model.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_types/flutter_chat_types.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import '../features/calendar/screens/calendar_screen.dart';
@@ -94,8 +92,7 @@ class AppRouter {
   Widget _buildScreen(RouteSettings settings) {
     switch (settings.name) {
       case '/calendar-verification':
-        final args = settings.arguments as Map<String, dynamic>;
-        return CalendarScreen(isVerification: true, userId: args['userId']);
+        return CalendarScreen();
       default:
         return MainTabScreen();
     }
@@ -111,7 +108,7 @@ class _MainTabScreenState extends State<MainTabScreen> {
   int _currentIndex = 0;
   final List<Widget> _screens = [
     HomeScreen(),
-    CalendarScreen(userId: UserModel.phoneNumber),
+    CalendarScreen(),
     ChatScreen(),
     profile.ProfileScreen(),
   ];

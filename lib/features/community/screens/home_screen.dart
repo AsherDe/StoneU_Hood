@@ -12,7 +12,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
   String _selectedCategory = '推荐';
   List<Post> _posts = [];
   
@@ -94,39 +93,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                     ),
             ),
-          ),
-        ],
-      ),
-      // 底部导航栏
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-          
-          // 切换页面
-          if (index == 0) {
-            // 已经在首页
-          } else if (index == 1) {
-            // 消息页面
-          } else if (index == 2) {
-            // 个人页面
-            Navigator.pushNamed(context, '/profile');
-          }
-        },
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: '首页',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.message),
-            label: '消息',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: '我的',
           ),
         ],
       ),

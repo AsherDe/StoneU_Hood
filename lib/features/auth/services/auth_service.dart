@@ -56,7 +56,7 @@ class AuthService {
   }
 
   // 设置用户验证状态
-  Future<bool> setVerified(String userId) async {
+  Future<bool> setVerified(String userId, {bool fromTimetableImport = false}) async {
     try {
       final response = await _dio.post('/users/$userId/verify');
 

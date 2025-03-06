@@ -451,7 +451,7 @@ class _TimetableWebViewState extends State<TimetableWebView> {
         
         try {
           final authService = AuthService();
-          final success = await authService.setVerified(widget.userId!);
+          final success = await authService.setVerified(widget.userId!, fromTimetableImport: true);
           
           if (success) {
             setState(() {
