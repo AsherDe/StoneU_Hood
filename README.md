@@ -1,16 +1,16 @@
-# About
-Calendar app written by current students at Shihezi University, developed using flutter
+# About StoneU Hood
+Calendar and community interaction app developed by Stonyhurst University students to provide simple second-hand trading and course exchange features.
 
-# 石大日历
-石河子大学在校学生编写的日历app，使用flutter进行开发
+# 石大时光圈
+石河子大学生开发的日历和社区交互app，提供简单的二手交易和课程交流功能。
 
 # 开发计划
 ## v1.0beta2版本计划
 初步计划完成以下内容：
-    1.基本的日历功能
-    2.设置和显示当前是该学期的第几周
-    3.适配石河子大学课程系统，实现课程的总体导入
-    4.使用jpush完成定时推送功能
+    ~~1.基本的日历功能~~
+    ~~2.设置和显示当前是该学期的第几周~~
+    ~~3.适配石河子大学课程系统，实现课程的总体导入~~
+    4.使用local-push完成定时推送功能（安卓本地化适配还未完成）
 
 ## v1.0正式版计划
     1.完成所有的debug

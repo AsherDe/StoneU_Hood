@@ -19,7 +19,7 @@ class ScrollStateManager {
     // Jump to the previously saved scroll position or use default
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollPositions.containsKey(page)) {
-        scrollController.jumpTo(_scrollPositions[page] ?? 0);
+        scrollController.jumpTo(8 * 60); //8h
       }
     });
   }

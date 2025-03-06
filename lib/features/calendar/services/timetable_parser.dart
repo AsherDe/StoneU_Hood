@@ -5,7 +5,7 @@ import '../models/event.dart';
 
 class TimetableParser {
   /// 解析HTML内容并提取课程
-  static List<CalendarEvent> parseTimetable(String htmlContent) {
+  static List<CalendarEvent> parseTimetable(String htmlContent, DateTime semesterStart) {
     htmlContent = htmlContent
         .replaceAll("\\u003C", '<')
         .replaceAll("\\u003E", '>');
@@ -87,7 +87,7 @@ class TimetableParser {
             tempDiv.innerHtml = courseBlock;
 
             // 解析课程信息
-            final courseEvents = _parseCourseCell(tempDiv, day, timeSlot);
+            final courseEvents = _parseCourseCell(tempDiv, day, timeSlot, semesterStart);
             events.addAll(courseEvents);
           }
         }
@@ -131,6 +131,7 @@ class TimetableParser {
     dom.Element courseDiv,
     int dayOfWeek,
     TimeSlot timeSlot,
+    DateTime semesterStart,
   ) {
     List<CalendarEvent> events = [];
 
@@ -218,6 +219,7 @@ class TimetableParser {
           week,
           dayOfWeek,
           timeSlot,
+          semesterStart
         );
         events.add(event);
       }
@@ -303,11 +305,8 @@ class TimetableParser {
     int week,
     int dayOfWeek,
     TimeSlot timeSlot,
+    DateTime semesterStart,
   ) {
-    // 获取当前学期第一天的日期
-    final DateTime semesterStart = DateTime.now().subtract(
-      Duration(days: DateTime.now().weekday - 1),
-    );
 
     // 计算这个特定课程的日期
     final eventDate = semesterStart.add(
