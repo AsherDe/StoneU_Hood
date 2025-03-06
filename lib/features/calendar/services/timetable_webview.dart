@@ -4,7 +4,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../models/event.dart';
 import 'timetable_parser.dart';
 import '../services/event_repository.dart';
-import '../../community/services/auth_service.dart'; // Add this line to import AuthService
+import '../../auth/services/auth_service.dart'; // Add this line to import AuthService
 
 class TimetableWebView extends StatefulWidget {
   final Function(List<CalendarEvent>) onEventsImported;

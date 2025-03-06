@@ -1,14 +1,16 @@
 // lib/routes/app_router.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import '../features/calendar/screens/calendar_screen.dart';
 import '../features/community/screens/home_screen.dart';
 import '../features/community/screens/marketplace_screen.dart';
-import '../features/community/screens/study_materials_screen.dart';
 import '../features/community/screens/chat_screen.dart';
 import '../features/community/screens/profile_screen.dart' as profile;
-import '../features/community/screens/create_item_screen.dart';
-import '../features/community/community_controller.dart';
+import '../features/community/controllers/community_controller.dart';
+import '../features/calendar/services/calendar_sync_service.dart';
+import '../features/auth/services/auth_service.dart';
+import '../features/auth/providers/user_provider.dart';
 
 class AppRouter {
   // Singleton pattern
@@ -20,14 +22,20 @@ class AppRouter {
   
   AppRouter._internal();
   
+  // Initialize services
+  Future<void> initialize() async {
+    await CalendarSyncService().initialize();
+  }
+  
   // Root widgets
   Widget getMainApp() {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => CommunityController()),
+        ChangeNotifierProvider(create: (_) => UserProvider()),
       ],
       child: MaterialApp(
-        title: '石大日历',
+        title: '石大时光圈',
         theme: ThemeData(
           primarySwatch: Colors.blue,
           scaffoldBackgroundColor: Colors.white,
@@ -65,6 +73,14 @@ class AppRouter {
             bodySmall: TextStyle(color: Colors.white54),
           ),
         ),
+        localizationsDelegates: [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: [
+          const Locale('zh', 'CN'),
+        ],
         home: MainTabScreen(),
         onGenerateRoute: (settings) {
           return MaterialPageRoute(
@@ -81,13 +97,17 @@ class AppRouter {
     switch (settings.name) {
       case '/marketplace':
         return MarketplaceScreen();
-      case '/study-materials':
-        return StudyMaterialsScreen();
       case '/create-item':
         return CreateItemScreen();
       case '/edit-item':
         final args = settings.arguments as Map<String, dynamic>;
         return CreateItemScreen(itemToEdit: args['item']);
+      case '/calendar-verification':
+        final args = settings.arguments as Map<String, dynamic>;
+        return CalendarScreen(
+          isVerification: true,
+          userId: args['userId'],
+        );
       default:
         return MainTabScreen();
     }
@@ -114,7 +134,45 @@ class _MainTabScreenState extends State<MainTabScreen> {
     // Initialize the community controller
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<CommunityController>(context, listen: false).initialize();
+      
+      // Check user verification status
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      if (userProvider.isLoggedIn && !userProvider.isVerified) {
+        showVerificationDialog();
+      }
     });
+  }
+
+  void showVerificationDialog() {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Text('需要验证'),
+        content: Text('您需要导入学校日历以验证您的学生身份，才能发布内容。'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: Text('稍后'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(
+                context,
+                '/calendar-verification',
+                arguments: {'userId': userProvider.userId},
+              );
+            },
+            child: Text('立即验证'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override

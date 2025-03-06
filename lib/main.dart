@@ -6,14 +6,16 @@ import 'features/community/screens/home_screen.dart';
 import 'features/community/screens/chat_screen.dart';
 import 'features/community/screens/profile_screen.dart' as profile;
 import 'features/calendar/services/calendar_sync_service.dart';
+import 'routes/app_router.dart';
 
 void main() async {
   // 确保Flutter绑定初始化
   WidgetsFlutterBinding.ensureInitialized();
   
   // 初始化日历同步服务
+  final appRouter = AppRouter();
   await CalendarSyncService().initialize();
-  runApp(MyApp());
+  runApp(appRouter.getMainApp());
 }
 
 class MyApp extends StatelessWidget {
