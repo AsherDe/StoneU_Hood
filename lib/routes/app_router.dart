@@ -1,32 +1,32 @@
 // lib/routes/app_router.dart
+import 'package:StoneU_Hood/features/community/models/user_model.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_chat_types/flutter_chat_types.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import '../features/calendar/screens/calendar_screen.dart';
 import '../features/community/screens/home_screen.dart';
-import '../features/community/screens/marketplace_screen.dart';
-import '../features/community/screens/chat_screen.dart';
 import '../features/community/screens/profile_screen.dart' as profile;
 import '../features/community/controllers/community_controller.dart';
 import '../features/calendar/services/calendar_sync_service.dart';
-import '../features/auth/services/auth_service.dart';
 import '../features/auth/providers/user_provider.dart';
+import '../features/community/screens/chatscreen.dart';
 
 class AppRouter {
   // Singleton pattern
   static final AppRouter _instance = AppRouter._internal();
-  
+
   factory AppRouter() {
     return _instance;
   }
-  
+
   AppRouter._internal();
-  
+
   // Initialize services
   Future<void> initialize() async {
     await CalendarSyncService().initialize();
   }
-  
+
   // Root widgets
   Widget getMainApp() {
     return MultiProvider(
@@ -78,9 +78,7 @@ class AppRouter {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        supportedLocales: [
-          const Locale('zh', 'CN'),
-        ],
+        supportedLocales: [const Locale('zh', 'CN')],
         home: MainTabScreen(),
         onGenerateRoute: (settings) {
           return MaterialPageRoute(
@@ -91,23 +89,13 @@ class AppRouter {
       ),
     );
   }
-  
+
   // Route generation
   Widget _buildScreen(RouteSettings settings) {
     switch (settings.name) {
-      case '/marketplace':
-        return MarketplaceScreen();
-      case '/create-item':
-        return CreateItemScreen();
-      case '/edit-item':
-        final args = settings.arguments as Map<String, dynamic>;
-        return CreateItemScreen(itemToEdit: args['item']);
       case '/calendar-verification':
         final args = settings.arguments as Map<String, dynamic>;
-        return CalendarScreen(
-          isVerification: true,
-          userId: args['userId'],
-        );
+        return CalendarScreen(isVerification: true, userId: args['userId']);
       default:
         return MainTabScreen();
     }
@@ -123,7 +111,7 @@ class _MainTabScreenState extends State<MainTabScreen> {
   int _currentIndex = 0;
   final List<Widget> _screens = [
     HomeScreen(),
-    CalendarScreen(),
+    CalendarScreen(userId: UserModel.phoneNumber),
     ChatScreen(),
     profile.ProfileScreen(),
   ];
@@ -134,7 +122,7 @@ class _MainTabScreenState extends State<MainTabScreen> {
     // Initialize the community controller
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<CommunityController>(context, listen: false).initialize();
-      
+
       // Check user verification status
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       if (userProvider.isLoggedIn && !userProvider.isVerified) {
@@ -145,33 +133,34 @@ class _MainTabScreenState extends State<MainTabScreen> {
 
   void showVerificationDialog() {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    
+
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Text('需要验证'),
-        content: Text('您需要导入学校日历以验证您的学生身份，才能发布内容。'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: Text('稍后'),
+      builder:
+          (context) => AlertDialog(
+            title: Text('需要验证'),
+            content: Text('您需要导入学校日历以验证您的学生身份，才能发布内容。'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: Text('稍后'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(
+                    context,
+                    '/calendar-verification',
+                    arguments: {'userId': userProvider.userId},
+                  );
+                },
+                child: Text('立即验证'),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(
-                context,
-                '/calendar-verification',
-                arguments: {'userId': userProvider.userId},
-              );
-            },
-            child: Text('立即验证'),
-          ),
-        ],
-      ),
     );
   }
 

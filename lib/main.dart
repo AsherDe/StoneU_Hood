@@ -1,9 +1,9 @@
 // lib/main.dart
+import 'package:StoneU_Hood/features/community/screens/chatscreen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'features/calendar/screens/calendar_screen.dart';
 import 'features/community/screens/home_screen.dart';
-import 'features/community/screens/chat_screen.dart';
 import 'features/community/screens/profile_screen.dart' as profile;
 import 'features/calendar/services/calendar_sync_service.dart';
 import 'routes/app_router.dart';

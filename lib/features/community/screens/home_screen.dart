@@ -4,7 +4,7 @@ import '../models/post_model.dart';
 import '../widgets/post_card.dart';
 import '../widgets/category_selector.dart';
 import '../widgets/create_post_button.dart';
-import '../controllers/community_controller.dart';
+import '../service/post_service.dart';
 
 class HomeScreen extends StatefulWidget {
   @override

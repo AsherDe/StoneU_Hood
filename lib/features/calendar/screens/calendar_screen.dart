@@ -18,7 +18,10 @@ import '../services/calendar_sync_service.dart';
 
 class CalendarScreen extends StatefulWidget {
   @override
+  final String userId;
+  final bool isVerification;
   _CalendarScreenState createState() => _CalendarScreenState();
+  CalendarScreen({required this.userId, this.isVerification = false});
 }
 
 class _CalendarScreenState extends State<CalendarScreen> {

@@ -5,6 +5,7 @@ import '../models/user_model.dart';
 import '../models/post_model.dart';
 import '../widgets/post_card.dart';
 import '../widgets/profile_header.dart';
+import '../service/post_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   @override
