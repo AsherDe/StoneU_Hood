@@ -24,7 +24,6 @@ class UserModel extends ChangeNotifier {
     // 假设从后端获取用户资料
     nickname = "用户${phone.substring(7)}";
     college = "计算机科学学院";
-    className = "软件工程2班";
     signature = "这个人很懒，什么都没留下";
     likes = 42;
     following = 15;
@@ -32,11 +31,10 @@ class UserModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void register(String phone, String password, String collegeValue, String classValue, String? genderValue) {
+  void register(String phone, String password, String collegeValue, String? genderValue) {
     // 模拟注册逻辑
     phoneNumber = phone;
     college = collegeValue;
-    className = classValue;
     gender = genderValue;
     isLoggedIn = true;
     nickname = "用户${phone.substring(7)}";

@@ -1,13 +1,15 @@
 // widgets/post_card.dart - 帖子卡片
+import 'package:StoneU_Hood/features/community/screens/post_detail_screen.dart';
 import 'package:flutter/material.dart';
 import '../models/post_model.dart';
-import '../theme/app_theme.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import '../../../core/constants/app_theme.dart';
 
 class PostCard extends StatefulWidget {
   final Post post;
+  final bool enableDetailNavigation;
 
-  const PostCard({Key? key, required this.post}) : super(key: key);
+  const PostCard({Key? key, required this.post, this.enableDetailNavigation = true}) : super(key: key);
 
   @override
   _PostCardState createState() => _PostCardState();
@@ -135,7 +137,14 @@ class _PostCardState extends State<PostCard> {
                   icon: Icons.chat_bubble_outline,
                   label: widget.post.comments.toString(),
                   onTap: () {
-                    // 打开评论区
+                    if (widget.enableDetailNavigation) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PostDetailScreen(post: widget.post),
+                        ),
+                      );
+                    }
                   },
                 ),
                 _buildActionButton(

@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'dart:async';
 import '../models/event.dart';
 import '../services/event_repository.dart';
-import '../../../core/constants/theme_constants.dart';
+import '../../../core/constants/calendar_theme.dart';
 import '../widgets/week_view.dart';
 import '../widgets/reminder_select.dart';
 import '../widgets/semester_settings_dialog.dart';
@@ -45,7 +45,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
     _timer = Timer.periodic(Duration(minutes: 1), (timer) {
       if (mounted) setState(() {});
     });
-    _checkSemesterSettings();
     _notificationService.initialize();
 
     // 加载事件
@@ -1015,12 +1014,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                 runSpacing: 12,
                                 children:
                                     [
-                                          '#FF2D55',
-                                          '#FF9500',
-                                          '#FFCC00',
-                                          '#4CD964',
-                                          '#5856D6',
-                                          '#007AFF',
+                                          '#DBAF47',
+                                          '#FF9786',
+                                          '#2DBCCC',
+                                          '#D67250',
+                                          '#A67664',
+                                          '#0077a6',
                                         ]
                                         .map(
                                           (color) => GestureDetector(

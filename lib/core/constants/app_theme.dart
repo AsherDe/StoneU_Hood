@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 class AppTheme {
   // 主色调
-  static const Color primaryColor = Color(0xFF4C84FF);
+  static const Color primaryColor = Color.fromRGBO(74, 153, 234, 1);
   static const Color secondaryColor = Color(0xFF50C878);
   
   // 黑白
@@ -16,9 +16,9 @@ class AppTheme {
   static const Map<String, Color> categoryColors = {
     '二手交易': Color(0xFFFF9800),
     '提问区': Color(0xFF2196F3),
-    '工作交流区': Color(0xFF4CAF50),
-    '游戏交流区': Color(0xFFE91E63),
-    '交友交流区': Color(0xFF9C27B0),
+    '招工/求职': Color(0xFF4CAF50),
+    '游戏': Color(0xFFE91E63),
+    '闲聊一下': Color(0xFF9C27B0),
   };
 
   // 浅色主题

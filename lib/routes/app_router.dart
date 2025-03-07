@@ -1,4 +1,5 @@
 // lib/routes/app_router.dart
+import 'package:StoneU_Hood/core/constants/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -8,7 +9,7 @@ import '../features/community/screens/profile_screen.dart' as profile;
 import '../features/community/controllers/community_controller.dart';
 import '../features/calendar/services/calendar_sync_service.dart';
 import '../features/auth/providers/user_provider.dart';
-import '../features/community/screens/chatscreen.dart';
+import '../features/community/screens/chat_screen.dart';
 
 class AppRouter {
   // Singleton pattern
@@ -34,43 +35,8 @@ class AppRouter {
       ],
       child: MaterialApp(
         title: '石大时光圈',
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          scaffoldBackgroundColor: Colors.white,
-          appBarTheme: AppBarTheme(
-            backgroundColor: Colors.white,
-            elevation: 0,
-            iconTheme: IconThemeData(color: Colors.black87),
-            titleTextStyle: TextStyle(
-              color: Colors.black87,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          textTheme: TextTheme(
-            bodyLarge: TextStyle(color: Colors.black),
-            bodyMedium: TextStyle(color: Colors.black87),
-            bodySmall: TextStyle(color: Colors.black54),
-          ),
-        ),
-        darkTheme: ThemeData(
-          brightness: Brightness.dark,
-          scaffoldBackgroundColor: Color(0xFF303030),
-          appBarTheme: AppBarTheme(
-            backgroundColor: Color(0xFF303030),
-            elevation: 0,
-            titleTextStyle: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          textTheme: TextTheme(
-            bodyLarge: TextStyle(color: Colors.white),
-            bodyMedium: TextStyle(color: Colors.white70),
-            bodySmall: TextStyle(color: Colors.white54),
-          ),
-        ),
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
         localizationsDelegates: [
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,

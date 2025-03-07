@@ -109,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: () {
                         // 忘记密码处理
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('忘记密码功能开发中')),
+                          SnackBar(content: Text('忘记密码功能开发中，当前请联系作者找回账户')),
                         );
                       },
                       child: Text('忘记密码？'),

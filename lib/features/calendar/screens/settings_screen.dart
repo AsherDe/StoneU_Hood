@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:device_calendar/device_calendar.dart';
 import '../services/calendar_sync_service.dart';
 import '../services/event_repository.dart';
-import '/core/constants/theme_constants.dart';
+import '../../../core/constants/calendar_theme.dart';
 
 class SettingsScreen extends StatefulWidget {
   @override

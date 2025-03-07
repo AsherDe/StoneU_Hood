@@ -1,5 +1,5 @@
 // lib/main.dart
-import 'package:StoneU_Hood/features/community/screens/chatscreen.dart';
+import 'package:StoneU_Hood/features/community/screens/chat_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'features/calendar/screens/calendar_screen.dart';
@@ -7,6 +7,7 @@ import 'features/community/screens/home_screen.dart';
 import 'features/community/screens/profile_screen.dart' as profile;
 import 'features/calendar/services/calendar_sync_service.dart';
 import 'routes/app_router.dart';
+import 'core/constants/app_theme.dart';
 
 void main() async {
   // 确保Flutter绑定初始化
@@ -23,31 +24,16 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: '石大日历',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: Colors.white,
-        textTheme: TextTheme(
-          bodyLarge: TextStyle(color: Colors.black),
-          bodyMedium: TextStyle(color: Colors.black87),
-          bodySmall: TextStyle(color: Colors.black54),
-        ),
-      ),
-      darkTheme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: Color(0xFF303030),
-        textTheme: TextTheme(
-          bodyLarge: TextStyle(color: Colors.white),
-          bodyMedium: TextStyle(color: Colors.white70),
-          bodySmall: TextStyle(color: Colors.white54),
-        ),
-      ),
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
       localizationsDelegates: [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: [
-        const Locale('zh', 'CN'),
+        const Locale('zh'),
+        const Locale('en'),
       ],
       home: MainTabScreen(),
     );

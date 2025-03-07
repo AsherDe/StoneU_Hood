@@ -17,7 +17,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   
   String? _selectedCollege;
-  String? _selectedClass;
   String? _selectedGender;
   bool _isVerificationSent = false;
 
@@ -38,24 +37,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     '法学院',
   ];
 
-  List<String> _classes = [];
-
-  void _updateClasses(String college) {
-    // 根据选择的学院更新班级列表
-    switch (college) {
-      case '计算机科学学院':
-        _classes = ['软件工程1班', '软件工程2班', '计算机科学1班', '计算机科学2班', '网络工程1班', '人工智能1班'];
-        break;
-      case '数学学院':
-        _classes = ['数学1班', '数学2班', '统计学1班', '应用数学1班'];
-        break;
-      default:
-        _classes = ['1班', '2班', '3班', '4班'];
-    }
-    
-    // 重置选择的班级
-    _selectedClass = null;
-  }
 
   @override
   void dispose() {
@@ -206,9 +187,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     onChanged: (value) {
                       setState(() {
                         _selectedCollege = value;
-                        if (value != null) {
-                          _updateClasses(value);
-                        }
                       });
                     },
                     validator: (value) {
@@ -217,38 +195,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       }
                       return null;
                     },
-                  ),
-                  
-                  SizedBox(height: 16),
-                  
-                  // 选择班级
-                  DropdownButtonFormField<String>(
-                    decoration: InputDecoration(
-                      labelText: '选择班级',
-                      prefixIcon: Icon(Icons.group),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    value: _selectedClass,
-                    items: _classes.map((className) {
-                      return DropdownMenuItem<String>(
-                        value: className,
-                        child: Text(className),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedClass = value;
-                      });
-                    },
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return '请选择班级';
-                      }
-                      return null;
-                    },
-                    isExpanded: true,
                   ),
                   
                   SizedBox(height: 16),
@@ -291,9 +237,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ElevatedButton(
                     onPressed: () {
                       if (_formKey.currentState!.validate()) {
-                        if (_selectedCollege == null || _selectedClass == null) {
+                        if (_selectedCollege == null ) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('请选择学院和班级')),
+                            SnackBar(content: Text('请选择学院')),
                           );
                           return;
                         }
@@ -303,8 +249,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           _phoneController.text, 
                           _passwordController.text,
                           _selectedCollege!,
-                          _selectedClass!,
-                          _selectedGender
+                          _selectedGender ?? ''
                         );
                         
                         ScaffoldMessenger.of(context).showSnackBar(

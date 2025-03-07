@@ -1,5 +1,5 @@
 // models/post_model.dart - 帖子模型
-import 'comment.dart';
+import 'comment_model.dart';
 
 class Post {
   final String id;

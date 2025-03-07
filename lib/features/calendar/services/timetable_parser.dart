@@ -5,7 +5,10 @@ import '../models/event.dart';
 
 class TimetableParser {
   /// 解析HTML内容并提取课程
-  static List<CalendarEvent> parseTimetable(String htmlContent, DateTime semesterStart) {
+  static List<CalendarEvent> parseTimetable(
+    String htmlContent,
+    DateTime semesterStart,
+  ) {
     htmlContent = htmlContent
         .replaceAll("\\u003C", '<')
         .replaceAll("\\u003E", '>');
@@ -87,7 +90,12 @@ class TimetableParser {
             tempDiv.innerHtml = courseBlock;
 
             // 解析课程信息
-            final courseEvents = _parseCourseCell(tempDiv, day, timeSlot, semesterStart);
+            final courseEvents = _parseCourseCell(
+              tempDiv,
+              day,
+              timeSlot,
+              semesterStart,
+            );
             events.addAll(courseEvents);
           }
         }
@@ -219,7 +227,7 @@ class TimetableParser {
           week,
           dayOfWeek,
           timeSlot,
-          semesterStart
+          semesterStart,
         );
         events.add(event);
       }
@@ -307,7 +315,6 @@ class TimetableParser {
     TimeSlot timeSlot,
     DateTime semesterStart,
   ) {
-
     // 计算这个特定课程的日期
     final eventDate = semesterStart.add(
       Duration(days: (week - 1) * 7 + dayOfWeek - 1),
@@ -367,12 +374,12 @@ class TimetableParser {
   static String _getCourseColor(String courseName) {
     // 日历颜色列表
     final colors = [
-      '#FF2D55', // 红色
-      '#FF9500', // 橙色
-      '#FFCC00', // 黄色
-      '#4CD964', // 绿色
-      '#5856D6', // 紫色
-      '#007AFF', // 蓝色
+      '#DBAF47',
+      '#FF9786',
+      '#2DBCCC',
+      '#D67250',
+      '#A67664',
+      '#0077a6', 
     ];
 
     // 从课程名称生成哈希码

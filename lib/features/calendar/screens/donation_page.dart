@@ -1,6 +1,6 @@
 // lib/screens/donation_page.dart
 import 'package:flutter/material.dart';
-import '../../../core/constants/theme_constants.dart';
+import '../../../core/constants/calendar_theme.dart';
 
 class DonationPage extends StatelessWidget {
   @override
@@ -57,11 +57,7 @@ class DonationPage extends StatelessWidget {
                   ),
                   SizedBox(height: 12),
                   // 这里使用占位图 - 实际使用时需替换成真实的二维码图片
-                  Image.asset(
-                    'images/alipay_receive.png',
-                    width: 200,
-                    height: 200,
-                  )
+                          Image(image: AssetImage('images/alipay_receive.jpg')),
                 ]
               ),
               SizedBox(height: 40),

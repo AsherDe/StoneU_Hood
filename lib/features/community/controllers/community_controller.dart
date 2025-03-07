@@ -2,7 +2,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import '../models/post_model.dart';
-import '../models/comment.dart';
+import '../models/comment_model.dart';
 import '../../auth/providers/user_provider.dart';
 import '../../auth/services/auth_service.dart';
 

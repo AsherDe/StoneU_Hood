@@ -19,9 +19,9 @@ class _HomeScreenState extends State<HomeScreen> {
     '推荐',
     '二手交易',
     '提问区',
-    '工作交流区',
-    '游戏交流区',
-    '交友交流区',
+    '招工/求职',
+    '游戏',
+    '闲聊一下',
   ];
 
   @override
@@ -47,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('校园社区'),
+        title: Text('石大社区'),
         actions: [
           IconButton(
             icon: Icon(Icons.search),

@@ -1,6 +1,6 @@
 // lib/features/community/services/post_service.dart
 import '../models/post_model.dart';
-import '../models/comment.dart';
+import '../models/comment_model.dart';
 
 class PostService {
   static List<Post> getDummyPosts() {
