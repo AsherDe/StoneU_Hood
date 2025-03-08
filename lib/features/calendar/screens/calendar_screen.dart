@@ -1,4 +1,5 @@
 // lib/screens/calendar_screen.dart
+import 'package:StoneU_Hood/core/constants/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
@@ -568,7 +569,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   Text(
                     '第${_getCurrentWeekNumber()}周',
                     style: TextStyle(
-                      color: ThemeConstants.upcomingColor,
+                      color: AppTheme.primaryColor,
                       fontSize: 14,
                     ),
                   ),

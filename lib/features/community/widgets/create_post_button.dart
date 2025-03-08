@@ -1,10 +1,13 @@
 // widgets/create_post_button.dart - 创建帖子按钮
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_theme.dart';
 
 class CreatePostButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FloatingActionButton(
+      backgroundColor: AppTheme.primaryColor,
+      foregroundColor: Colors.white,
       onPressed: () {
         _showCreatePostBottomSheet(context);
       },

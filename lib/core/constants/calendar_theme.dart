@@ -1,9 +1,10 @@
 // lib/constants/theme_constants.dart
 import 'package:flutter/material.dart';
+import 'app_theme.dart';
 
 class ThemeConstants {
   static const Color pastColor = Color(0xFFAAAAAA);
-  static const Color currentColor = Color(0xFF000000);
+  static const Color currentColor = AppTheme.primaryColor;
   static const Color upcomingColor = Color(0xFF333333);
   static const Color gridLineColor = Color(0xFFE0E0E0);
   

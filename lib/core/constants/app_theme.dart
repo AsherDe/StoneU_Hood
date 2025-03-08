@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 
 class AppTheme {
   // 主色调
-  static const Color primaryColor = Color.fromRGBO(74, 153, 234, 1);
-  static const Color secondaryColor = Color(0xFF50C878);
+  static const Color primaryColor = Color.fromRGBO(166, 118, 100, 1);
+  static const Color secondaryColor = Color.fromRGBO(134, 159, 107, 1);
   
   // 黑白
   static const Color textColor = Color(0xFF333333);
@@ -14,19 +14,19 @@ class AppTheme {
   
   // 分类颜色
   static const Map<String, Color> categoryColors = {
-    '二手交易': Color(0xFFFF9800),
-    '提问区': Color(0xFF2196F3),
-    '招工/求职': Color(0xFF4CAF50),
-    '游戏': Color(0xFFE91E63),
-    '闲聊一下': Color(0xFF9C27B0),
+    '二手交易': Color.fromRGBO(134, 160, 107, 1),
+    '提问区': Color.fromRGBO(108, 146, 198, 1),
+    '招工/求职': Color.fromRGBO(134, 160, 107, 1),
+    '游戏': Color.fromRGBO(211, 157, 152, 1),
+    '闲聊一下': Color.fromRGBO(165, 146, 185, 1),
   };
 
   // 浅色主题
   static final ThemeData lightTheme = ThemeData(
     primaryColor: primaryColor,
-    scaffoldBackgroundColor: backgroundColor,
+    scaffoldBackgroundColor: Colors.white,
     appBarTheme: AppBarTheme(
-      color: primaryColor,
+      color: Colors.white,
       elevation: 0,
       iconTheme: IconThemeData(color: Colors.white),
       titleTextStyle: TextStyle(

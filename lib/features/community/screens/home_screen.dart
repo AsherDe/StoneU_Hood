@@ -1,4 +1,5 @@
 // screens/home_screen.dart - 主页面
+import 'package:StoneU_Hood/core/constants/app_theme.dart';
 import 'package:flutter/material.dart';
 import '../models/post_model.dart';
 import '../widgets/post_card.dart';
@@ -47,7 +48,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('石大社区'),
+        title: Text('石大社区', style: TextStyle(color: AppTheme.primaryColor)),
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         actions: [
           IconButton(
             icon: Icon(Icons.search),

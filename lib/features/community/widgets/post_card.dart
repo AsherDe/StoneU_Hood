@@ -71,14 +71,14 @@ class _PostCardState extends State<PostCard> {
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.amber.shade100,
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.amber),
+                      border: Border.all(color: AppTheme.secondaryColor),
                     ),
                     child: Text(
                       '¥${widget.post.rewardAmount}',
                       style: TextStyle(
-                        color: Colors.amber.shade800,
+                        color: AppTheme.secondaryColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

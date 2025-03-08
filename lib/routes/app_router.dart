@@ -141,6 +141,7 @@ class _MainTabScreenState extends State<MainTabScreen> {
         type: BottomNavigationBarType.fixed,
         selectedItemColor: Theme.of(context).primaryColor,
         unselectedItemColor: Colors.grey,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
