@@ -1,149 +1,284 @@
-// lib/features/community/screens/chat_screen.dart
+// lib/screens/chat_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
-import 'package:flutter_chat_ui/flutter_chat_ui.dart';
-import 'package:uuid/uuid.dart';
-import '../models/chat_model.dart';
+import 'package:provider/provider.dart';
+import '../providers/chat_provider.dart';
+import '../models/message.dart';
+import '../../../core/constants/app_theme.dart';
 
 class ChatScreen extends StatefulWidget {
+  final String chatId;
+  final String receiverVestName;
+  
+  ChatScreen({
+    required this.chatId,
+    required this.receiverVestName,
+  });
+  
   @override
   _ChatScreenState createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  late ChatModel _chatModel;
-  types.Room? _selectedRoom;
-  final String _selfUserId = const Uuid().v4(); // 临时用户ID，实际应使用登录用户ID
-
+  final _messageController = TextEditingController();
+  final _scrollController = ScrollController();
+  bool _isLoading = false;
+  bool _isSending = false;
+  List<Message> _messages = [];
+  
   @override
   void initState() {
     super.initState();
-    
-    // 初始化聊天模型
-    _chatModel = ChatModel(_selfUserId);
-    
-    // 添加一些测试聊天室
-    _addDemoRooms();
+    _loadMessages();
+    // 添加实时消息监听
+    Provider.of<ChatProvider>(context, listen: false)
+        .startMessageListener(widget.chatId, _onNewMessage);
   }
-
-  void _addDemoRooms() {
-    // 添加几个演示聊天室
-    _chatModel.createOrGetRoom('user1', '张同学', null);
-    _chatModel.createOrGetRoom('user2', '李同学', null);
-    _chatModel.createOrGetRoom('user3', '王老师', null);
+  
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    // 移除实时消息监听
+    Provider.of<ChatProvider>(context, listen: false)
+        .stopMessageListener();
+    super.dispose();
+  }
+  
+  void _onNewMessage(Message message) {
+    setState(() {
+      _messages.insert(0, message);
+    });
+    _scrollToBottom();
+  }
+  
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+  
+  Future<void> _loadMessages() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      final messages = await Provider.of<ChatProvider>(context, listen: false)
+          .fetchMessages(widget.chatId);
+          
+      setState(() {
+        _messages = messages;
+      });
+      
+      _scrollToBottom();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('获取消息失败: $e')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+  
+  Future<void> _sendMessage() async {
+    final content = _messageController.text.trim();
+    
+    if (content.isEmpty) {
+      return;
+    }
+    
+    setState(() {
+      _isSending = true;
+    });
+    
+    try {
+      await Provider.of<ChatProvider>(context, listen: false)
+          .sendMessage(widget.chatId, content);
+          
+      _messageController.clear();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('发送消息失败: $e')),
+      );
+    } finally {
+      setState(() {
+        _isSending = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('消息'),
+        title: Text(widget.receiverVestName),
+        backgroundColor: AppTheme.primaryColor,
+        centerTitle: true,
       ),
-      body: Row(
+      body: Column(
         children: [
-          // 聊天室列表
+          // 消息列表
           Expanded(
-            flex: 1,
-            child: _buildRoomList(),
+            child: _isLoading
+                ? Center(child: CircularProgressIndicator())
+                : _messages.isEmpty
+                    ? Center(child: Text('暂无消息，开始聊天吧'))
+                    : ListView.builder(
+                        controller: _scrollController,
+                        padding: EdgeInsets.all(10),
+                        reverse: true, // 从底部开始显示
+                        itemCount: _messages.length,
+                        itemBuilder: (ctx, index) {
+                          final message = _messages[index];
+                          return _buildMessageItem(message);
+                        },
+                      ),
           ),
           
-          // 分隔线
-          VerticalDivider(width: 1, thickness: 1, color: Colors.grey[300]),
-          
-          // 聊天区域
-          Expanded(
-            flex: 2,
-            child: _selectedRoom == null
-                ? Center(child: Text('选择一个聊天开始交流'))
-                : _buildChatArea(),
+          // 消息输入框
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 5,
+                  offset: Offset(0, -1),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _messageController,
+                    decoration: InputDecoration(
+                      hintText: '发送消息...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 15,
+                        vertical: 10,
+                      ),
+                    ),
+                    maxLength: 500,
+                    buildCounter: (context, {required currentLength, required isFocused, maxLength}) {
+                      return null; // 隐藏字数统计
+                    },
+                  ),
+                ),
+                SizedBox(width: 10),
+                _isSending
+                    ? SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : IconButton(
+                        icon: Icon(Icons.send),
+                        color: AppTheme.primaryColor,
+                        onPressed: _sendMessage,
+                      ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
-
-  Widget _buildRoomList() {
-    return ListView.builder(
-      itemCount: _chatModel.rooms.length,
-      itemBuilder: (context, index) {
-        final room = _chatModel.rooms[index];
-        return ListTile(
-          leading: CircleAvatar(
-            backgroundColor: Colors.blue,
-            child: Text(room.name?[0] ?? '?'),
-          ),
-          title: Text(room.name ?? '未命名'),
-          subtitle: room.lastMessages?.isNotEmpty == true
-              ? Text(
-                  (room.lastMessages!.first as types.TextMessage).text,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                )
-              : null,
-          selected: _selectedRoom?.id == room.id,
-          onTap: () {
-            setState(() {
-              _selectedRoom = room;
-            });
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildChatArea() {
-    if (_selectedRoom == null) return Container();
+  
+  Widget _buildMessageItem(Message message) {
+    final isSentByMe = message.isSentByMe;
     
-    final messages = _chatModel.getMessages(_selectedRoom!.id);
-    
-    return Column(
-      children: [
-        // 聊天头部
-        Container(
-          padding: EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(color: Colors.grey[300]!),
-            ),
-          ),
-          child: Row(
-            children: [
-              CircleAvatar(
-                backgroundColor: Colors.blue,
-                child: Text(_selectedRoom!.name?[0] ?? '?'),
-              ),
-              SizedBox(width: 12),
-              Text(
-                _selectedRoom!.name ?? '未命名',
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        mainAxisAlignment: isSentByMe
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!isSentByMe) ...[
+            CircleAvatar(
+              backgroundColor: AppTheme.secondaryColor,
+              radius: 16,
+              child: Text(
+                widget.receiverVestName.characters.first,
                 style: TextStyle(
-                  fontSize: 18,
+                  color: Colors.white,
                   fontWeight: FontWeight.bold,
+                  fontSize: 12,
                 ),
               ),
-            ],
-          ),
-        ),
-        
-        // 聊天消息列表区域
-        Expanded(
-          child: Chat(
-            messages: messages,
-            onSendPressed: _handleSendPressed,
-            user: types.User(id: _selfUserId),
-            theme: DefaultChatTheme(
-              inputBackgroundColor: Colors.grey[200]!,
-              primaryColor: Theme.of(context).primaryColor,
+            ),
+            SizedBox(width: 10),
+          ],
+          
+          Flexible(
+            child: Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isSentByMe
+                    ? AppTheme.primaryColor
+                    : Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    message.content,
+                    style: TextStyle(
+                      color: isSentByMe ? Colors.white : Colors.black,
+                      fontSize: 16,
+                    ),
+                  ),
+                  SizedBox(height: 5),
+                  Text(
+                    _formatTimestamp(message.createdAt),
+                    style: TextStyle(
+                      color: isSentByMe
+                          ? Colors.white.withOpacity(0.7)
+                          : Colors.grey,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+          
+          if (isSentByMe) ...[
+            SizedBox(width: 10),
+            CircleAvatar(
+              backgroundColor: AppTheme.primaryColor,
+              radius: 16,
+              child: Text(
+                '我',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
-
-  void _handleSendPressed(types.PartialText message) {
-    if (_selectedRoom == null) return;
-    
-    _chatModel.sendMessage(_selectedRoom!.id, message.text);
-    setState(() {}); // 刷新UI
+  
+  String _formatTimestamp(DateTime timestamp) {
+    return '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
   }
 }

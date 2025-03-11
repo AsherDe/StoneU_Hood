@@ -579,27 +579,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
           ],
         ),
         actions: [
-          // Add navigation buttons for quick week jumping
-          // IconButton(
-          //   icon: Icon(Icons.arrow_back_ios, color: ThemeConstants.currentColor),
-          //   onPressed: () {
-          //     _pageController.previousPage(
-          //       duration: Duration(milliseconds: 300),
-          //       curve: Curves.easeInOut,
-          //     );
-          //   },
-          //   tooltip: '上一周',
-          // ),
-          // IconButton(
-          //   icon: Icon(Icons.arrow_forward_ios, color: ThemeConstants.currentColor),
-          //   onPressed: () {
-          //     _pageController.nextPage(
-          //       duration: Duration(milliseconds: 300),
-          //       curve: Curves.easeInOut,
-          //     );
-          //   },
-          //   tooltip: '下一周',
-          // ),
           IconButton(
             icon: Icon(Icons.help_outline, color: ThemeConstants.currentColor),
             onPressed: _showHelpDialog,

@@ -1,8 +1,9 @@
-// screens/login_screen.dart - 登录界面
+// lib/screens/login_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/user_model.dart';
-import '../widgets/custom_text_field.dart';
+import '../providers/auth_provider.dart';
+import '../../../core/constants/app_theme.dart';
+import './home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -11,145 +12,153 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _phoneController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
+  final _otpController = TextEditingController();
+  bool _otpSent = false;
+  bool _isLoading = false;
 
-  @override
-  void dispose() {
-    _phoneController.dispose();
-    _passwordController.dispose();
-    super.dispose();
+  void _sendOtp() async {
+    if (_phoneController.text.trim().length != 11) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('请输入正确的手机号码')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await Provider.of<AuthProvider>(context, listen: false)
+          .sendOtp(_phoneController.text.trim());
+      setState(() {
+        _otpSent = true;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('发送验证码失败: $e')),
+      );
+    }
+  }
+
+  void _verifyOtp() async {
+    if (_otpController.text.trim().length != 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('请输入6位验证码')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final success = await Provider.of<AuthProvider>(context, listen: false)
+          .verifyOtp(_phoneController.text.trim(), _otpController.text.trim());
+      
+      if (success) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => HomeScreen()),
+        );
+      } else {
+        throw Exception('验证失败');
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('验证码错误: $e')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  SizedBox(height: 60),
-                  // 应用图标和名称
-                  Center(
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.school,
-                          size: 80,
-                          color: Theme.of(context).primaryColor,
-                        ),
-                        SizedBox(height: 16),
-                        Text(
-                          '校园社区',
-                          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          '连接校园生活的每一刻',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
+      backgroundColor: AppTheme.backgroundColor,
+      appBar: AppBar(
+        title: Text('欢迎使用校园互助平台'),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: AppTheme.primaryColor,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              elevation: 4,
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.school,
+                      size: 80,
+                      color: AppTheme.primaryColor,
                     ),
-                  ),
-                  
-                  SizedBox(height: 60),
-                  
-                  // 手机号输入
-                  CustomTextField(
-                    controller: _phoneController,
-                    labelText: '手机号',
-                    hintText: '请输入手机号',
-                    prefixIcon: Icons.phone_android,
-                    keyboardType: TextInputType.phone,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return '请输入手机号';
-                      }
-                      if (value.length != 11) {
-                        return '请输入11位手机号';
-                      }
-                      return null;
-                    },
-                  ),
-                  
-                  SizedBox(height: 16),
-                  
-                  // 密码输入
-                  CustomTextField(
-                    controller: _passwordController,
-                    labelText: '密码',
-                    hintText: '请输入密码',
-                    prefixIcon: Icons.lock_outline,
-                    obscureText: true,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return '请输入密码';
-                      }
-                      if (value.length < 6) {
-                        return '密码长度不能少于6位';
-                      }
-                      return null;
-                    },
-                  ),
-                  
-                  SizedBox(height: 8),
-                  
-                  // 忘记密码
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () {
-                        // 忘记密码处理
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('忘记密码功能开发中，当前请联系作者找回账户')),
-                        );
-                      },
-                      child: Text('忘记密码？'),
+                    SizedBox(height: 20),
+                    Text(
+                      '手机号登录/注册',
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
-                  ),
-                  
-                  SizedBox(height: 24),
-                  
-                  // 登录按钮
-                  ElevatedButton(
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        // 登录逻辑
-                        Provider.of<UserModel>(context, listen: false)
-                            .login(_phoneController.text, _passwordController.text);
-                        Navigator.pushReplacementNamed(context, '/home');
-                      }
-                    },
-                    child: Text('登录', style: TextStyle(fontSize: 16)),
-                  ),
-                  
-                  SizedBox(height: 16),
-                  
-                  // 注册入口
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('还没有账号？'),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/register');
-                        },
-                        child: Text('立即注册'),
+                    SizedBox(height: 30),
+                    TextField(
+                      controller: _phoneController,
+                      enabled: !_otpSent,
+                      decoration: InputDecoration(
+                        labelText: '手机号码',
+                        prefixIcon: Icon(Icons.phone),
+                        border: OutlineInputBorder(),
                       ),
-                    ],
-                  ),
-                ],
+                      keyboardType: TextInputType.phone,
+                    ),
+                    SizedBox(height: 15),
+                    if (_otpSent)
+                      TextField(
+                        controller: _otpController,
+                        decoration: InputDecoration(
+                          labelText: '验证码',
+                          prefixIcon: Icon(Icons.lock_outline),
+                          border: OutlineInputBorder(),
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    SizedBox(height: 25),
+                    _isLoading
+                        ? CircularProgressIndicator()
+                        : ElevatedButton(
+                            onPressed: _otpSent ? _verifyOtp : _sendOtp,
+                            child: Text(
+                              _otpSent ? '验证' : '获取验证码',
+                              style: TextStyle(fontSize: 16),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              padding: EdgeInsets.symmetric(vertical: 15),
+                              backgroundColor: AppTheme.primaryColor,
+                            ),
+                          ),
+                    if (_otpSent)
+                      TextButton(
+                        onPressed: _isLoading ? null : _sendOtp,
+                        child: Text('重新发送验证码'),
+                      ),
+                  ],
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );

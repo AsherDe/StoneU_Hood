@@ -67,7 +67,7 @@ dependencies:
   web_socket_channel: ^2.4.0
   dio: ^5.8.0
   timeago: ^3.7.0
-
+  flutter_secure_storage: ^5.0.2
 
 dev_dependencies:
   flutter_test:
