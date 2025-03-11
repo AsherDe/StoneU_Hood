@@ -1,6 +1,7 @@
 // lib/features/auth/services/auth_service.dart
 import 'package:dio/dio.dart';
 import '../providers/user_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
   final Dio _dio = Dio();
@@ -11,7 +12,7 @@ class AuthService {
   }
 
   AuthService._internal() {
-    _dio.options.baseUrl = 'https://your-api-endpoint.com/api';
+    _dio.options.baseUrl = 'http://localhost:8080';
     _dio.options.connectTimeout = Duration(seconds: 5);
     _dio.options.receiveTimeout = Duration(seconds: 3);
   }
@@ -25,6 +26,12 @@ class AuthService {
       });
 
       if (response.statusCode == 200 && response.data['success']) {
+        // 保存token
+        final token = response.data['token'];
+        // 使用SharedPreferences存储token
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('auth_token', token);
+        
         return true;
       }
       return false;
@@ -56,7 +63,7 @@ class AuthService {
   }
 
   // 设置用户验证状态
-  Future<bool> setVerified(String userId) async {
+  Future<bool> setVerified(String userId, {bool fromTimetableImport = false}) async {
     try {
       final response = await _dio.post('/users/$userId/verify');
 

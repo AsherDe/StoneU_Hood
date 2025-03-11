@@ -422,7 +422,7 @@ class _TimetableWebViewState extends State<TimetableWebView> {
           _isLoading = false;
         });
 
-        _showTableDebugDialog();
+        // _showTableDebugDialog();
         return;
       }
 
@@ -451,7 +451,7 @@ class _TimetableWebViewState extends State<TimetableWebView> {
         
         try {
           final authService = AuthService();
-          final success = await authService.setVerified(widget.userId!);
+          final success = await authService.setVerified(widget.userId!, fromTimetableImport: true);
           
           if (success) {
             setState(() {
@@ -480,37 +480,37 @@ class _TimetableWebViewState extends State<TimetableWebView> {
     }
   }
   
-  void _showTableDebugDialog() {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('调试信息'),
-            content: const Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('未在页面上找到课程表元素。可能的原因：'),
-                SizedBox(height: 8),
-                Text('1. 未登录或未导航到正确的课表页面'),
-                Text('2. 学校教务系统更新，表格ID或结构已变化'),
-                Text('3. 页面未完全加载，请尝试点击刷新后再解析'),
-                SizedBox(height: 16),
-                Text('请尝试的操作：'),
-                Text('- 手动在页面中导航到"学期理论课表"'),
-                Text('- 确保课表已经完全显示在页面上'),
-                Text('- 刷新页面后再次尝试'),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('了解'),
-              ),
-            ],
-          ),
-    );
-  }
+  // void _showTableDebugDialog() {
+  //   showDialog(
+  //     context: context,
+  //     builder:
+  //         (context) => AlertDialog(
+  //           title: const Text('调试信息'),
+  //           content: const Column(
+  //             mainAxisSize: MainAxisSize.min,
+  //             crossAxisAlignment: CrossAxisAlignment.start,
+  //             children: [
+  //               Text('未在页面上找到课程表元素。可能的原因：'),
+  //               SizedBox(height: 8),
+  //               Text('1. 未登录或未导航到正确的课表页面'),
+  //               Text('2. 学校教务系统更新，表格ID或结构已变化'),
+  //               Text('3. 页面未完全加载，请尝试点击刷新后再解析'),
+  //               SizedBox(height: 16),
+  //               Text('请尝试的操作：'),
+  //               Text('- 手动在页面中导航到"学期理论课表"'),
+  //               Text('- 确保课表已经完全显示在页面上'),
+  //               Text('- 刷新页面后再次尝试'),
+  //             ],
+  //           ),
+  //           actions: [
+  //             TextButton(
+  //               onPressed: () => Navigator.of(context).pop(),
+  //               child: const Text('了解'),
+  //             ),
+  //           ],
+  //         ),
+  //   );
+  // }
 
   void _showParsingDebugDialog(String html) {
     showDialog(

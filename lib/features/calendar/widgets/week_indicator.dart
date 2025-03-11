@@ -1,7 +1,7 @@
 // lib/widgets/week_indicator.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../core/constants/theme_constants.dart';
+import '../../../core/constants/calendar_theme.dart';
 
 class WeekIndicator extends StatelessWidget {
   final DateTime startOfWeek;
@@ -30,7 +30,7 @@ class WeekIndicator extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isCurrentWeek ? ThemeConstants.currentColor : Colors.grey[300]!,
-            width: isCurrentWeek ? 2 : 1,
+            width: isCurrentWeek ? 1 : 0.5,
           ),
         ),
         child: Row(

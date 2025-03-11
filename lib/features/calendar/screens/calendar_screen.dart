@@ -1,10 +1,11 @@
 // lib/screens/calendar_screen.dart
+import 'package:StoneU_Hood/core/constants/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 import '../models/event.dart';
 import '../services/event_repository.dart';
-import '../../../core/constants/theme_constants.dart';
+import '../../../core/constants/calendar_theme.dart';
 import '../widgets/week_view.dart';
 import '../widgets/reminder_select.dart';
 import '../widgets/semester_settings_dialog.dart';
@@ -45,7 +46,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
     _timer = Timer.periodic(Duration(minutes: 1), (timer) {
       if (mounted) setState(() {});
     });
-    _checkSemesterSettings();
     _notificationService.initialize();
 
     // 加载事件
@@ -569,7 +569,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   Text(
                     '第${_getCurrentWeekNumber()}周',
                     style: TextStyle(
-                      color: ThemeConstants.upcomingColor,
+                      color: AppTheme.primaryColor,
                       fontSize: 14,
                     ),
                   ),
@@ -579,27 +579,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
           ],
         ),
         actions: [
-          // Add navigation buttons for quick week jumping
-          // IconButton(
-          //   icon: Icon(Icons.arrow_back_ios, color: ThemeConstants.currentColor),
-          //   onPressed: () {
-          //     _pageController.previousPage(
-          //       duration: Duration(milliseconds: 300),
-          //       curve: Curves.easeInOut,
-          //     );
-          //   },
-          //   tooltip: '上一周',
-          // ),
-          // IconButton(
-          //   icon: Icon(Icons.arrow_forward_ios, color: ThemeConstants.currentColor),
-          //   onPressed: () {
-          //     _pageController.nextPage(
-          //       duration: Duration(milliseconds: 300),
-          //       curve: Curves.easeInOut,
-          //     );
-          //   },
-          //   tooltip: '下一周',
-          // ),
           IconButton(
             icon: Icon(Icons.help_outline, color: ThemeConstants.currentColor),
             onPressed: _showHelpDialog,
@@ -1015,12 +994,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                 runSpacing: 12,
                                 children:
                                     [
-                                          '#FF2D55',
-                                          '#FF9500',
-                                          '#FFCC00',
-                                          '#4CD964',
-                                          '#5856D6',
-                                          '#007AFF',
+                                          '#DBAF47',
+                                          '#FF9786',
+                                          '#2DBCCC',
+                                          '#D67250',
+                                          '#A67664',
+                                          '#0077a6',
                                         ]
                                         .map(
                                           (color) => GestureDetector(

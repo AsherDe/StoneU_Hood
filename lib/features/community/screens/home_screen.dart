@@ -1,10 +1,14 @@
-// screens/home_screen.dart - 主页面
+// lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
-import '../models/post_model.dart';
+import 'package:provider/provider.dart';
+import '../providers/post_provider.dart';
+import '../providers/auth_provider.dart';
 import '../widgets/post_card.dart';
-import '../widgets/category_selector.dart';
 import '../widgets/create_post_button.dart';
-import '../controllers/community_controller.dart';
+import './create_post_screen.dart';
+import './chat_list_screen.dart';
+import './search_screen.dart';
+import '../../../core/constants/app_theme.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -12,126 +16,142 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
-  String _selectedCategory = '推荐';
-  List<Post> _posts = [];
+  bool _isLoading = false;
+  final ScrollController _scrollController = ScrollController();
   
-  final List<String> _categories = [
-    '推荐',
-    '二手交易',
-    '提问区',
-    '工作交流区',
-    '游戏交流区',
-    '交友交流区',
-  ];
-
   @override
   void initState() {
     super.initState();
-    // 获取帖子
     _loadPosts();
-  }
-
-  void _loadPosts() {
-    // 模拟从服务器加载帖子
-    setState(() {
-      _posts = PostService.getDummyPosts();
-      
-      // 根据分类筛选
-      if (_selectedCategory != '推荐') {
-        _posts = _posts.where((post) => post.category == _selectedCategory).toList();
+    
+    // 添加滚动监听，实现上拉加载更多
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+        _loadMorePosts();
       }
     });
+  }
+  
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+  
+  Future<void> _loadPosts() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      await Provider.of<PostProvider>(context, listen: false).fetchPosts();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('获取帖子失败: $e')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+  
+  Future<void> _loadMorePosts() async {
+    if (_isLoading) return;
+    
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      await Provider.of<PostProvider>(context, listen: false).loadMorePosts();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('加载更多帖子失败: $e')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _refreshPosts() async {
+    await Provider.of<PostProvider>(context, listen: false).refreshPosts();
+  }
+  
+  void _navigateToCreatePost() {
+    final isVerified = Provider.of<AuthProvider>(context, listen: false).isVerified;
+    
+    if (!isVerified) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('您的账号尚未通过认证，无法发帖')),
+      );
+      return;
+    }
+    
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CreatePostScreen(),
+      ),
+    ).then((_) => _refreshPosts());
+  }
+  
+  void _navigateToSearch() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SearchScreen(),
+      ),
+    );
+  }
+  
+  void _navigateToChatList() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ChatListScreen(),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final posts = Provider.of<PostProvider>(context).posts;
+    
     return Scaffold(
       appBar: AppBar(
-        title: Text('校园社区'),
+        title: Text('校园互助平台'),
+        backgroundColor: AppTheme.primaryColor,
+        centerTitle: true,
         actions: [
           IconButton(
             icon: Icon(Icons.search),
-            onPressed: () {
-              // 搜索功能
-            },
+            onPressed: _navigateToSearch,
           ),
           IconButton(
-            icon: Icon(Icons.notifications),
-            onPressed: () {
-              // 通知功能
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // 分类选择器
-          CategorySelector(
-            categories: _categories,
-            selectedCategory: _selectedCategory,
-            onCategorySelected: (category) {
-              setState(() {
-                _selectedCategory = category;
-                _loadPosts();
-              });
-            },
-          ),
-          
-          // 帖子列表
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: () async {
-                // 刷新帖子
-                _loadPosts();
-              },
-              child: _posts.isEmpty
-                  ? Center(child: Text('暂无内容'))
-                  : ListView.builder(
-                      itemCount: _posts.length,
-                      itemBuilder: (context, index) {
-                        return PostCard(post: _posts[index]);
-                      },
-                    ),
-            ),
-          ),
-        ],
-      ),
-      // 底部导航栏
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-          
-          // 切换页面
-          if (index == 0) {
-            // 已经在首页
-          } else if (index == 1) {
-            // 消息页面
-          } else if (index == 2) {
-            // 个人页面
-            Navigator.pushNamed(context, '/profile');
-          }
-        },
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: '首页',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.message),
-            label: '消息',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: '我的',
+            onPressed: _navigateToChatList,
           ),
         ],
       ),
-      // 悬浮按钮 - 发布新帖子
-      floatingActionButton: CreatePostButton(),
+      body: RefreshIndicator(
+        onRefresh: _refreshPosts,
+        child: posts.isEmpty && !_isLoading
+            ? Center(child: Text('暂无帖子，下拉刷新或者发布新帖子'))
+            : ListView.builder(
+                controller: _scrollController,
+                padding: EdgeInsets.all(10),
+                itemCount: posts.length + (_isLoading ? 1 : 0),
+                itemBuilder: (ctx, index) {
+                  if (index == posts.length) {
+                    return Center(child: CircularProgressIndicator());
+                  }
+                  return PostCard(post: posts[index]);
+                },
+              ),
+      ),
+      floatingActionButton: CreatePostButton(
+        onPressed: _navigateToCreatePost,
+      ),
     );
   }
 }
