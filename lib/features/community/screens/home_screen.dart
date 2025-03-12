@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/post_provider.dart';
-import '../providers/auth_provider.dart';
 import '../widgets/post_card.dart';
 import '../widgets/create_post_button.dart';
 import './create_post_screen.dart';
@@ -81,15 +80,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
   
   void _navigateToCreatePost() {
-    final isVerified = Provider.of<AuthProvider>(context, listen: false).isVerified;
-    
-    if (!isVerified) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('您的账号尚未通过认证，无法发帖')),
-      );
-      return;
-    }
-    
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => CreatePostScreen(),

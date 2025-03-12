@@ -63,14 +63,7 @@ class MyApp extends StatelessWidget {
             return Scaffold(body: Center(child: CircularProgressIndicator()));
           }
          
-          if (snapshot.hasData && snapshot.data != null) {
-            // 已登录，初始化用户信息
-            Provider.of<AuthProvider>(context, listen: false).initFromToken(snapshot.data!);
-            return MainTabScreen();
-          }
-          
-          // 未登录，前往登录页
-          return LoginScreen();
+          return MainTabScreen();
         },
       ),
     );
@@ -83,7 +76,7 @@ class MainTabScreen extends StatefulWidget {
 }
 
 class _MainTabScreenState extends State<MainTabScreen> {
-  int _currentIndex = 0;
+  int _currentIndex = 1;
   
   // 定义所有标签页对应的屏幕
   final List<Widget> _screens = [
@@ -99,6 +92,34 @@ class _MainTabScreenState extends State<MainTabScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
+          if (index == 2 || index == 0) {
+            // 获取 AuthProvider
+          final authProvider = Provider.of<AuthProvider>(context, listen: false);
+          
+          // 检查是否已登录
+          if (!authProvider.authenticated) {
+            // 提示用户登录
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('请先登录后再使用聊天功能')),
+            );
+            
+            // 跳转到登录页面
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => LoginScreen()),
+            );
+            return;
+          }
+
+          // 检查是否已验证
+          if (!authProvider.verified) {
+            // 提示用户需要先解析课程表
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('请先导入课程表完成验证')),
+            );
+            return;
+          }
+        }
+
           setState(() {
             _currentIndex = index;
           });
