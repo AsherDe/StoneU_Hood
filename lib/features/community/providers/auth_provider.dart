@@ -30,11 +30,24 @@ class AuthProvider with ChangeNotifier {
     return _authenticated;
   }
 
-  // 检查用户是否已经通过课表验证
-  Future<bool> isVerified() async {
-    _verified = await _authService.isTimetableVerified();
+  // 直接设置verified
+  Future<void> setVerified(bool value) async {
+    // 在 AuthService 中保存状态
+    if (value) {
+      await _authService.storage.write(
+        key: 'timetable_verified',
+        value: 'true',
+      );
+    } else {
+      await _authService.storage.write(
+        key: 'timetable_verified',
+        value: 'false',
+      );
+    }
+
+    // 更新本地状态
+    _verified = value;
     notifyListeners();
-    return _verified;
   }
 
   // 检查timetable验证状态
@@ -54,7 +67,10 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      await _apiService.post('/auth/send-otp', {'phone': phone, 'sceneId': sceneId});
+      await _apiService.post('/auth/send-otp', {
+        'phone': phone,
+        'sceneId': sceneId,
+      });
       _isLoading = false;
       notifyListeners();
       return true;
@@ -71,7 +87,6 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      
       final response = await _apiService.post('/auth/verify-otp', {
         'phone': phone,
         'otp': otp,
@@ -82,6 +97,12 @@ class AuthProvider with ChangeNotifier {
 
       // 获取用户信息
       _currentUser = await _authService.getCurrentUser();
+      if (_currentUser != null) {
+        await _authService.storage.write(
+          key: 'user_data',
+          value: _currentUser?.toJson().toString() ?? '',
+        );
+      }
 
       _isLoading = false;
       notifyListeners();
@@ -103,6 +124,39 @@ class AuthProvider with ChangeNotifier {
   // 刷新用户信息
   Future<void> refreshUser() async {
     _currentUser = await _authService.getCurrentUser();
+    notifyListeners();
+  }
+
+  // 在UserProvider类中添加
+  Future<bool> verifyCurrentUser() async {
+    try {
+      final response = await _apiService.verifyUser();
+      if (response.containsKey('verified') && response['verified'] == true) {
+        // 可能需要更新本地用户状态
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('验证用户失败: $e');
+      return false;
+    }
+  }
+
+  Future<void> checkLoginStatus() async {
+    _authenticated = await _checkAuthenticated();
+
+    if (_authenticated) {
+      // 如果认证有效，获取用户信息
+      _currentUser = await _authService.getCurrentUser();
+      // 检查验证状态
+      _verified = await _authService.isVerified();
+    } else {
+      // 如果未认证，清除可能存在的过期数据
+      _currentUser = null;
+      _verified = false;
+    }
+
     notifyListeners();
   }
 }

@@ -76,9 +76,9 @@ class _ChatScreenState extends State<ChatScreen> {
       
       _scrollToBottom();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('获取消息失败: $e')),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text('获取消息失败: $e')),
+      // );
     } finally {
       setState(() {
         _isLoading = false;

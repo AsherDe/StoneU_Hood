@@ -5,7 +5,6 @@ import '../providers/post_provider.dart';
 import '../widgets/post_card.dart';
 import '../widgets/create_post_button.dart';
 import './create_post_screen.dart';
-import './chat_list_screen.dart';
 import './search_screen.dart';
 import '../../../core/constants/app_theme.dart';
 
@@ -45,9 +44,9 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       await Provider.of<PostProvider>(context, listen: false).fetchPosts();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('获取帖子失败: $e')),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text('获取帖子失败: $e')),
+      // );
     } finally {
       setState(() {
         _isLoading = false;
@@ -94,14 +93,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-  
-  void _navigateToChatList() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ChatListScreen(),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -116,10 +107,6 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: Icon(Icons.search),
             onPressed: _navigateToSearch,
-          ),
-          IconButton(
-            icon: Icon(Icons.message),
-            onPressed: _navigateToChatList,
           ),
         ],
       ),

@@ -4,7 +4,9 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../models/event.dart';
 import 'timetable_parser.dart';
 import '../services/event_repository.dart';
-import '../../community/services/auth_service.dart';
+import '../../community/providers/auth_provider.dart';
+import '../../../core/constants/app_theme.dart';
+import 'package:provider/provider.dart';
 
 class TimetableWebView extends StatefulWidget {
   final Function(List<CalendarEvent>) onEventsImported;
@@ -56,14 +58,14 @@ class _TimetableWebViewState extends State<TimetableWebView> {
                   _isTimetablePage = url.contains('xsMain');
 
                   if (_isTimetablePage) {
-                    _statusMessage = '已加载课程表页面，点击右上角下载按钮解析';
+                    _statusMessage = '加载理论课程表页面后，点击右上角下载按钮解析';
                   } else {
                     _checkForTimetableIframes();
                     _statusMessage = '请登录并进入"学期理论课表"页面';
                   }
                 });
               },
-              // 添加此配置以允许混合内容加载
+              // 允许混合内容加载
               onUrlChange: (UrlChange change) {
                 print('URL changed to: ${change.url}');
               },
@@ -118,6 +120,7 @@ class _TimetableWebViewState extends State<TimetableWebView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: AppTheme.primaryColor,
         title: const Text('导入课程表'),
         actions: [
           IconButton(
@@ -445,35 +448,20 @@ class _TimetableWebViewState extends State<TimetableWebView> {
         return;
       }
 
-      // 解析成功，保存timetable验证状态
-      final authService = AuthService();
-      await authService.setLocalTimetableVerification(true);
-      // 如果是验证模式且解析成功，设置用户为已验证
-      if (widget.isVerification && widget.userId != null && events.isNotEmpty) {
+      // 如果有正确target，设置用户为已验证
+      if (foundTarget) {
         setState(() {
           _statusMessage = '解析成功！正在验证用户...';
         });
 
         try {
-          final success = await authService.setVerified(
-            widget.userId!,
-            fromTimetableImport: true,
+          final authProvider = Provider.of<AuthProvider>(
+            context,
+            listen: false,
           );
-
-          if (success) {
-            setState(() {
-              _statusMessage = '验证成功！${events.length} 个课程已导入';
-            });
-
-            // 显示成功消息
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text('验证成功！您的账号已激活')));
-          } else {
-            setState(() {
-              _statusMessage = '课程导入成功，但用户验证失败，请重试';
-            });
-          }
+          await authProvider.verifyCurrentUser();
+          
+          await authProvider.setVerified(true);
         } catch (e) {
           setState(() {
             _statusMessage = '验证过程中出错: $e';
