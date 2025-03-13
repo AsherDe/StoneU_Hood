@@ -15,9 +15,24 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   String _selectedCategory = '二手交易';
   bool _isLoading = false;
   
+  // 二手交易相关字段
+  final _priceController = TextEditingController();
+  final _conditionController = TextEditingController();
+  final _usageYearsController = TextEditingController();
+  final _tradeLinkController = TextEditingController();
+  
+  // 校园招聘相关字段
+  final _talentTypeController = TextEditingController();
+  final _skillsRequiredController = TextEditingController();
+  final _salaryController = TextEditingController();
+  
+  // 活动组队相关字段
+  final _activityNameController = TextEditingController();
+  final _teamRequirementsController = TextEditingController();
+  
   final List<String> _categories = [
     '二手交易',
-    '兼职/需求',
+    '校园招聘',
     '活动组队',
     '畅言/其他',
   ];
@@ -26,13 +41,74 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   void dispose() {
     _titleController.dispose();
     _contentController.dispose();
+    
+    // 二手交易
+    _priceController.dispose();
+    _conditionController.dispose();
+    _usageYearsController.dispose();
+    _tradeLinkController.dispose();
+    
+    // 校园招聘
+    _talentTypeController.dispose();
+    _skillsRequiredController.dispose();
+    _salaryController.dispose();
+    
+    // 活动组队
+    _activityNameController.dispose();
+    _teamRequirementsController.dispose();
+    
     super.dispose();
+  }
+
+  String _formatContent() {
+    String formattedContent = '';
+    
+    switch (_selectedCategory) {
+      case '二手交易':
+        formattedContent = '''
+【商品简述】${_titleController.text}
+【价格】${_priceController.text}
+【物品状况】${_conditionController.text}
+【使用年限】${_usageYearsController.text}
+【详细描述】
+${_contentController.text}
+${_tradeLinkController.text.isNotEmpty ? "【交易链接】${_tradeLinkController.text}" : ""}
+''';
+        break;
+        
+      case '校园招聘':
+        formattedContent = '''
+【招聘需求】${_titleController.text}
+【需要人才类别】${_talentTypeController.text}
+【所需专业知识】${_skillsRequiredController.text}
+【薪酬】${_salaryController.text}
+【详细描述】
+${_contentController.text}
+''';
+        break;
+        
+      case '活动组队':
+        formattedContent = '''
+【活动名称】${_activityNameController.text}
+【搭档要求】${_teamRequirementsController.text}
+【详细描述】
+${_contentController.text}
+''';
+        break;
+        
+      case '畅言/其他':
+      default:
+        formattedContent = _contentController.text;
+        break;
+    }
+    
+    return formattedContent;
   }
 
   void _submitPost() async {
     final title = _titleController.text.trim();
-    final content = _contentController.text.trim();
     
+    // 基本验证
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('请输入标题')),
@@ -40,7 +116,29 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       return;
     }
     
-    if (content.isEmpty) {
+    // 针对不同类别的表单验证
+    if (_selectedCategory == '二手交易') {
+      if (_priceController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('请输入价格')),
+        );
+        return;
+      }
+    } else if (_selectedCategory == '校园招聘') {
+      if (_talentTypeController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('请输入需要的人才类别')),
+        );
+        return;
+      }
+    } else if (_selectedCategory == '活动组队') {
+      if (_activityNameController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('请输入活动名称')),
+        );
+        return;
+      }
+    } else if (_contentController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('请输入内容')),
       );
@@ -52,9 +150,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     });
     
     try {
+      // 格式化内容
+      final formattedContent = _formatContent();
+      
       await Provider.of<PostProvider>(context, listen: false).createPost(
         title: title,
-        content: content,
+        content: formattedContent,
         category: _selectedCategory,
       );
       
@@ -67,6 +168,239 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('发布失败: $e')),
       );
+    }
+  }
+
+  // 根据选择的类别返回对应的表单字段
+  Widget _buildCategoryFields() {
+    switch (_selectedCategory) {
+      case '二手交易':
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 标题输入
+            TextField(
+              controller: _titleController,
+              decoration: InputDecoration(
+                labelText: '标题',
+                hintText: '简短描述您需要出售的物品',
+                border: OutlineInputBorder(),
+              ),
+              maxLength: 30,
+            ),
+            SizedBox(height: 15),
+            
+            // 价格输入
+            TextField(
+              controller: _priceController,
+              decoration: InputDecoration(
+                labelText: '价格',
+                hintText: '请输入您的期望价格',
+                border: OutlineInputBorder(),
+                prefixText: '¥ ',
+              ),
+              keyboardType: TextInputType.number,
+            ),
+            SizedBox(height: 15),
+            
+            // 物品状况
+            TextField(
+              controller: _conditionController,
+              decoration: InputDecoration(
+                labelText: '物品状况',
+                hintText: '例如：全新/9成新/有使用痕迹等',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 15),
+            
+            // 使用年限
+            TextField(
+              controller: _usageYearsController,
+              decoration: InputDecoration(
+                labelText: '使用年限',
+                hintText: '例如：2个月/1年半等',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 15),
+            
+            // 详细描述
+            TextField(
+              controller: _contentController,
+              decoration: InputDecoration(
+                labelText: '详细描述',
+                hintText: '详细描述物品情况，是否有损坏等',
+                border: OutlineInputBorder(),
+                alignLabelWithHint: true,
+              ),
+              maxLines: 5,
+              maxLength: 300,
+            ),
+            SizedBox(height: 15),
+            
+            // 交易链接（可选）
+            TextField(
+              controller: _tradeLinkController,
+              decoration: InputDecoration(
+                labelText: '交易链接（可选）',
+                hintText: '其他平台链接等',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        );
+        
+      case '校园招聘':
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 标题输入
+            TextField(
+              controller: _titleController,
+              decoration: InputDecoration(
+                labelText: '标题',
+                hintText: '请输入招聘/需求标题',
+                border: OutlineInputBorder(),
+              ),
+              maxLength: 30,
+            ),
+            SizedBox(height: 15),
+            
+            // 人才类别
+            TextField(
+              controller: _talentTypeController,
+              decoration: InputDecoration(
+                labelText: '需要人才类别',
+                hintText: '例如：设计师/程序员/市场营销等',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 15),
+            
+            // 专业知识
+            TextField(
+              controller: _skillsRequiredController,
+              decoration: InputDecoration(
+                labelText: '所需专业知识',
+                hintText: '例如：熟悉PhotoShop/Flutter开发等',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 2,
+            ),
+            SizedBox(height: 15),
+            
+            // 薪酬
+            TextField(
+              controller: _salaryController,
+              decoration: InputDecoration(
+                labelText: '薪酬',
+                hintText: '例如：20元/小时，1000元/项目等',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 15),
+            
+            // 详细描述
+            TextField(
+              controller: _contentController,
+              decoration: InputDecoration(
+                labelText: '详细描述',
+                hintText: '详细描述工作内容、要求、联系方式等',
+                border: OutlineInputBorder(),
+                alignLabelWithHint: true,
+              ),
+              maxLines: 5,
+              maxLength: 300,
+            ),
+          ],
+        );
+        
+      case '活动组队':
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 标题输入
+            TextField(
+              controller: _titleController,
+              decoration: InputDecoration(
+                labelText: '标题',
+                hintText: '请输入组队标题',
+                border: OutlineInputBorder(),
+              ),
+              maxLength: 30,
+            ),
+            SizedBox(height: 15),
+            
+            // 活动名称
+            TextField(
+              controller: _activityNameController,
+              decoration: InputDecoration(
+                labelText: '活动名称',
+                hintText: '例如：篮球赛/团购/旅行等',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 15),
+            
+            // 搭档要求
+            TextField(
+              controller: _teamRequirementsController,
+              decoration: InputDecoration(
+                labelText: '搭档要求',
+                hintText: '例如：会打篮球/有驾照/喜欢摄影等',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 2,
+            ),
+            SizedBox(height: 15),
+            
+            // 详细描述
+            TextField(
+              controller: _contentController,
+              decoration: InputDecoration(
+                labelText: '详细描述',
+                hintText: '详细描述活动内容、时间地点、要求等',
+                border: OutlineInputBorder(),
+                alignLabelWithHint: true,
+              ),
+              maxLines: 5,
+              maxLength: 300,
+            ),
+          ],
+        );
+        
+      case '畅言/其他':
+      default:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 标题输入
+            TextField(
+              controller: _titleController,
+              decoration: InputDecoration(
+                labelText: '标题',
+                hintText: '请输入帖子标题',
+                border: OutlineInputBorder(),
+              ),
+              maxLength: 30,
+            ),
+            SizedBox(height: 15),
+            
+            // 内容输入
+            TextField(
+              controller: _contentController,
+              decoration: InputDecoration(
+                labelText: '内容',
+                hintText: '请输入帖子内容',
+                border: OutlineInputBorder(),
+                alignLabelWithHint: true,
+              ),
+              maxLines: 10,
+              maxLength: 500,
+            ),
+          ],
+        );
     }
   }
 
@@ -147,32 +481,46 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   ),
                   SizedBox(height: 25),
                   
-                  // 标题输入
-                  TextField(
-                    controller: _titleController,
-                    decoration: InputDecoration(
-                      labelText: '标题',
-                      hintText: '请输入帖子标题(不超过30字)',
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLength: 30,
-                  ),
-                  SizedBox(height: 20),
-                  
-                  // 内容输入
-                  TextField(
-                    controller: _contentController,
-                    decoration: InputDecoration(
-                      labelText: '内容',
-                      hintText: '请输入帖子内容(不超过500字)',
-                      border: OutlineInputBorder(),
-                      alignLabelWithHint: true,
-                    ),
-                    maxLines: 10,
-                    maxLength: 500,
-                  ),
+                  // 动态渲染不同类别的表单
+                  _buildCategoryFields(),
                   
                   SizedBox(height: 20),
+                  
+                  // 预览帖子内容
+                  if (_selectedCategory != '畅言/其他' && 
+                      (_titleController.text.isNotEmpty || 
+                       _contentController.text.isNotEmpty))
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Divider(),
+                        Text(
+                          '帖子预览',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        SizedBox(height: 10),
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(15),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: Text(
+                            _formatContent(),
+                            style: TextStyle(
+                              fontSize: 14,
+                              height: 1.5,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 20),
+                      ],
+                    ),
                   
                   // 提示
                   Card(
@@ -204,4 +552,3 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     );
   }
 }
-

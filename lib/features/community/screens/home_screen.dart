@@ -2,11 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/post_provider.dart';
-import '../providers/auth_provider.dart';
 import '../widgets/post_card.dart';
 import '../widgets/create_post_button.dart';
 import './create_post_screen.dart';
-import './chat_list_screen.dart';
 import './search_screen.dart';
 import '../../../core/constants/app_theme.dart';
 
@@ -46,9 +44,9 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       await Provider.of<PostProvider>(context, listen: false).fetchPosts();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('获取帖子失败: $e')),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text('获取帖子失败: $e')),
+      // );
     } finally {
       setState(() {
         _isLoading = false;
@@ -81,15 +79,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
   
   void _navigateToCreatePost() {
-    final isVerified = Provider.of<AuthProvider>(context, listen: false).isVerified;
-    
-    if (!isVerified) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('您的账号尚未通过认证，无法发帖')),
-      );
-      return;
-    }
-    
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => CreatePostScreen(),
@@ -101,14 +90,6 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => SearchScreen(),
-      ),
-    );
-  }
-  
-  void _navigateToChatList() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ChatListScreen(),
       ),
     );
   }
@@ -126,10 +107,6 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: Icon(Icons.search),
             onPressed: _navigateToSearch,
-          ),
-          IconButton(
-            icon: Icon(Icons.message),
-            onPressed: _navigateToChatList,
           ),
         ],
       ),
