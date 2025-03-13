@@ -1,4 +1,5 @@
 // lib/screens/calendar_screen.dart
+import 'package:StoneU_Hood/core/constants/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
@@ -532,7 +533,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
 
     // Add 60 pixels of padding at the bottom
-    return totalHeight + 60;
+    return totalHeight + 200;
   }
 
   @override
@@ -568,7 +569,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   Text(
                     '第${_getCurrentWeekNumber()}周',
                     style: TextStyle(
-                      color: ThemeConstants.upcomingColor,
+                      color: AppTheme.primaryColor,
                       fontSize: 14,
                     ),
                   ),
@@ -578,27 +579,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
           ],
         ),
         actions: [
-          // Add navigation buttons for quick week jumping
-          // IconButton(
-          //   icon: Icon(Icons.arrow_back_ios, color: ThemeConstants.currentColor),
-          //   onPressed: () {
-          //     _pageController.previousPage(
-          //       duration: Duration(milliseconds: 300),
-          //       curve: Curves.easeInOut,
-          //     );
-          //   },
-          //   tooltip: '上一周',
-          // ),
-          // IconButton(
-          //   icon: Icon(Icons.arrow_forward_ios, color: ThemeConstants.currentColor),
-          //   onPressed: () {
-          //     _pageController.nextPage(
-          //       duration: Duration(milliseconds: 300),
-          //       curve: Curves.easeInOut,
-          //     );
-          //   },
-          //   tooltip: '下一周',
-          // ),
           IconButton(
             icon: Icon(Icons.help_outline, color: ThemeConstants.currentColor),
             onPressed: _showHelpDialog,
@@ -791,78 +771,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             ),
                           ),
                         ),
-                        // 底部的下一个事件提示
-                        if (nextEvent != null)
-                          Positioned(
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 4,
-                                    offset: Offset(0, -2),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        '下一个事件',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                      Text(
-                                        DateFormat(
-                                          'MM月dd日 HH:mm',
-                                        ).format(nextEvent.startTime),
-                                        style: TextStyle(
-                                          color: Colors.grey[600],
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 4),
-                                  Text(
-                                    nextEvent.title,
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  if (nextEvent.notes.isNotEmpty)
-                                    SizedBox(height: 2),
-                                  if (nextEvent.notes.isNotEmpty)
-                                    Text(
-                                      nextEvent.notes,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey[700],
-                                      ),
-                                      maxLines: 3,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  SizedBox(height: 20),
-                                ],
-                              ),
-                            ),
-                          ),
                       ],
                     );
                   },
@@ -870,6 +778,70 @@ class _CalendarScreenState extends State<CalendarScreen> {
               ),
             ],
           ),
+          // 底部的下一个事件提示
+          if (nextEvent != null)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: Offset(0, -2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '下一个事件',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                        Text(
+                          DateFormat(
+                            'MM月dd日 HH:mm',
+                          ).format(nextEvent.startTime),
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      nextEvent.title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (nextEvent.notes.isNotEmpty) SizedBox(height: 2),
+                    if (nextEvent.notes.isNotEmpty)
+                      Text(
+                        nextEvent.notes,
+                        style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );

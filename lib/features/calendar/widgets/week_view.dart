@@ -8,7 +8,7 @@ class WeekView extends StatefulWidget {
   final List<CalendarEvent> events;
   final Function(CalendarEvent)? onEventTap;
 
-  static const double STANDARD_HOUR_HEIGHT = 60.0;
+  static const double STANDARD_HOUR_HEIGHT = 40.0;
   static const double COMPRESSED_HOUR_HEIGHT = 20.0;
   static const double TIME_COLUMN_WIDTH = 50.0;
   static const double VERTICAL_LINE_WIDTH = 1.0;
@@ -29,6 +29,16 @@ class WeekView extends StatefulWidget {
 }
 
 class _WeekViewState extends State<WeekView> {
+  late double _hourHeight;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 在 didChangeDependencies 中计算高度
+    _hourHeight = MediaQuery.of(context).size.height / 2 / 5;
+    _hourHeight = _hourHeight.roundToDouble();
+  }
+  
   // Map to track which hours have events
   late Map<int, bool> _hoursWithEvents;
 
@@ -252,20 +262,12 @@ class _WeekViewState extends State<WeekView> {
                         event.title,
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 12,
+                          fontSize: 10,
                           fontWeight: FontWeight.w500,
                         ),
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      // if (height > 40) // Only show time in taller events
-                      //   Text(
-                      //     '${DateFormat('HH:mm').format(event.startTime)} - ${DateFormat('HH:mm').format(event.endTime)}',
-                      //     style: TextStyle(
-                      //       color: Colors.white.withOpacity(0.8),
-                      //       fontSize: 10,
-                      //     ),
-                      //   ),
                       if (height > 80 && event.notes.isNotEmpty)
                         Padding(
                           padding: EdgeInsets.only(top: 4),
