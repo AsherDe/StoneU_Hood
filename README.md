@@ -1,6 +1,6 @@
 # 石大时光圈（StoneU Hood）
 
-![StoneU Hood Logo](https://your-logo-url.com)  
+![StoneU Hood Logo](./images/s.png)  
 
 ## 📌 项目介绍 | Project Introduction
 石大时光圈（StoneU Hood）是一个面向石河子大学学生的社交应用，原为石大日历（shida_calendar），现融合更多功能，包括：
