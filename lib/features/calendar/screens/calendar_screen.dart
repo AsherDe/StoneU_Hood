@@ -837,7 +837,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    SizedBox(height: 20),
+                    SizedBox(height: 10),
                   ],
                 ),
               ),
