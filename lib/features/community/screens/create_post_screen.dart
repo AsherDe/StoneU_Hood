@@ -5,6 +5,8 @@ import '../providers/post_provider.dart';
 import '../../../core/constants/app_theme.dart';
 
 class CreatePostScreen extends StatefulWidget {
+  const CreatePostScreen({super.key});
+
   @override
   _CreatePostScreenState createState() => _CreatePostScreenState();
 }

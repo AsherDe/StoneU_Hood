@@ -16,7 +16,7 @@ class CalendarEvent {
     required this.endTime,
     required this.reminderMinutes,
     this.color = '#FF2D55', // 默认使用苹果日历红色
-  }) : this.id = id ?? Uuid().v4();
+  }) : id = id ?? Uuid().v4();
 
   @override
   bool operator ==(Object other) {

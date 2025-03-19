@@ -7,6 +7,8 @@ import '../../../core/constants/app_theme.dart';
 import 'chat_screen.dart';
 
 class ChatListScreen extends StatefulWidget {
+  const ChatListScreen({super.key});
+
   @override
   _ChatListScreenState createState() => _ChatListScreenState();
 }
@@ -83,6 +85,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
               builder: (_) => ChatScreen(
                 chatId: chat.id,
                 receiverVestName: chat.otherVestName,
+                postId: chat.postId,
               ),
             ),
           ).then((_) => _refreshChats());

@@ -7,6 +7,8 @@ import '../widgets/post_card.dart';
 import '../../../core/constants/app_theme.dart';
 
 class SearchScreen extends StatefulWidget {
+  const SearchScreen({super.key});
+
   @override
   _SearchScreenState createState() => _SearchScreenState();
 }

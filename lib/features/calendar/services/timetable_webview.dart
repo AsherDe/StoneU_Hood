@@ -15,12 +15,12 @@ class TimetableWebView extends StatefulWidget {
   final Function(bool success)? onVerificationComplete; // 添加此回调
 
   const TimetableWebView({
-    Key? key,
+    super.key,
     required this.onEventsImported,
     this.userId,
     this.isVerification = false,
     this.onVerificationComplete,
-  }) : super(key: key);
+  });
 
   @override
   State<TimetableWebView> createState() => _TimetableWebViewState();
@@ -98,7 +98,7 @@ class _TimetableWebViewState extends State<TimetableWebView> {
         int count = int.parse(iframesCount.toString());
         for (int i = 0; i < count; i++) {
           final iframeSrc = await _controller.runJavaScriptReturningResult(
-            'document.querySelectorAll("iframe")[' + i.toString() + '].src',
+            'document.querySelectorAll("iframe")[$i].src',
           );
 
           if (iframeSrc.toString().contains('xskb_list') ||
@@ -250,10 +250,10 @@ class _TimetableWebViewState extends State<TimetableWebView> {
         for (int i = 0; i < count; i++) {
           // Get iframe source or name to identify the right one
           final iframeSrc = await _controller.runJavaScriptReturningResult(
-            'document.querySelectorAll("iframe")[' + i.toString() + '].src',
+            'document.querySelectorAll("iframe")[$i].src',
           );
           final iframeName = await _controller.runJavaScriptReturningResult(
-            'document.querySelectorAll("iframe")[' + i.toString() + '].name',
+            'document.querySelectorAll("iframe")[$i].name',
           );
 
           print('Iframe $i - src: $iframeSrc, name: $iframeName');
@@ -268,7 +268,7 @@ class _TimetableWebViewState extends State<TimetableWebView> {
                 .runJavaScriptReturningResult('''
               (function() {
                 try {
-                  const iframe = document.querySelectorAll("iframe")[${i}];
+                  const iframe = document.querySelectorAll("iframe")[$i];
                   if (iframe.contentDocument) {
                     return iframe.contentDocument.documentElement.outerHTML;
                   } else {
@@ -304,7 +304,7 @@ class _TimetableWebViewState extends State<TimetableWebView> {
               await _controller.runJavaScript('''
                 (function() {
                   try {
-                    const iframe = document.querySelectorAll("iframe")[${i}];
+                    const iframe = document.querySelectorAll("iframe")[$i];
                     // 创建一个脚本，让iframe将其内容发送到主页面
                     const script = document.createElement('script');
                     script.textContent = `
@@ -416,7 +416,7 @@ class _TimetableWebViewState extends State<TimetableWebView> {
         }
 
         if (tbodyHtml.length > 100) {
-          html = "<html><body>" + tbodyHtml + "</body></html>";
+          html = "<html><body>$tbodyHtml</body></html>";
           foundTarget = true;
         }
       }

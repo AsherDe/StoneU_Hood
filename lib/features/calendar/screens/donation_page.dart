@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/calendar_theme.dart';
 
 class DonationPage extends StatelessWidget {
+  const DonationPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -56,7 +58,6 @@ class DonationPage extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 12),
-                  // 这里使用占位图 - 实际使用时需替换成真实的二维码图片
                           Image(image: AssetImage('images/alipay_receive.jpg')),
                 ]
               ),

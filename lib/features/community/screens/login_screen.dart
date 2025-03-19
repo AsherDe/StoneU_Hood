@@ -8,6 +8,8 @@ import '../services/auth_service.dart';
 import '../../calendar/services/timetable_webview.dart'; 
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
@@ -260,10 +262,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         padding: const EdgeInsets.only(top: 8.0),
                         child: TextButton(
                           onPressed: _navigateToTimetableVerification,
-                          child: Text('点击验证身份'),
                           style: TextButton.styleFrom(
                             foregroundColor: AppTheme.primaryColor,
                           ),
+                          child: Text('点击验证身份'),
                         ),
                       ),
                     SizedBox(height: 20),

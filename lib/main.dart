@@ -42,6 +42,8 @@ void main() async {
 class MyApp extends StatelessWidget {
   final storage = FlutterSecureStorage();
 
+  MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -76,6 +78,8 @@ class MyApp extends StatelessWidget {
 }
 
 class MainTabScreen extends StatefulWidget {
+  const MainTabScreen({super.key});
+
   @override
   _MainTabScreenState createState() => _MainTabScreenState();
 }
