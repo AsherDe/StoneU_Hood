@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/post_provider.dart';
 import '../../../core/constants/app_theme.dart';
+import '../../calendar/services/timetable_webview.dart';
+import '../services/auth_service.dart';
 
 class CreatePostScreen extends StatefulWidget {
   const CreatePostScreen({super.key});
@@ -14,57 +16,136 @@ class CreatePostScreen extends StatefulWidget {
 class _CreatePostScreenState extends State<CreatePostScreen> {
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
+  final _authService = AuthService();
+
+  bool _timetableVerified = false; // 是否已验证身份
+  bool _isLoading = false; // 是否正在加载
+
   String _selectedCategory = '二手交易';
-  bool _isLoading = false;
-  
+
   // 二手交易相关字段
   final _priceController = TextEditingController();
   final _conditionController = TextEditingController();
   final _usageYearsController = TextEditingController();
   final _tradeLinkController = TextEditingController();
-  
+
   // 校园招聘相关字段
   final _talentTypeController = TextEditingController();
   final _skillsRequiredController = TextEditingController();
   final _salaryController = TextEditingController();
-  
+
   // 活动组队相关字段
   final _activityNameController = TextEditingController();
   final _teamRequirementsController = TextEditingController();
-  
-  final List<String> _categories = [
-    '二手交易',
-    '校园招聘',
-    '活动组队',
-    '畅言/其他',
-  ];
 
+  final List<String> _categories = ['二手交易', '校园招聘', '活动组队', '畅言/其他'];
+
+  @override
+  void initState() {
+    super.initState();
+    _checkTimetableVerification();
+  }
+
+  // 检查课表验证
+  Future<void> _checkTimetableVerification() async {
+    final isVerified = await _authService.isTimetableVerified();
+    setState(() {
+      _timetableVerified = isVerified;
+    });
+  }
+
+  // 显示验证对话框
+  void _showTimetableVerificationDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (context) => AlertDialog(
+            title: Text('需要验证身份'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('为了确保您是本校学生，需要您先通过教务系统课表验证身份。'),
+                SizedBox(height: 10),
+                Text(
+                  '点击"去验证"按钮，通过导入您的课程表来验证身份。',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('取消'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _navigateToTimetableVerification();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                ),
+                child: Text('去验证'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  // 导航到课表验证页面
+  void _navigateToTimetableVerification() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder:
+            (context) => TimetableWebView(
+              onEventsImported: (events) async {
+                if (events.isNotEmpty) {
+                  await _checkTimetableVerification();
+                  if (_timetableVerified) {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('身份验证成功！您现在可以发布帖子')));
+                  }
+                }
+              },
+              isVerification: true,
+            ),
+      ),
+    );
+  }
+
+  // 释放资源
   @override
   void dispose() {
     _titleController.dispose();
     _contentController.dispose();
-    
+
     // 二手交易
     _priceController.dispose();
     _conditionController.dispose();
     _usageYearsController.dispose();
     _tradeLinkController.dispose();
-    
+
     // 校园招聘
     _talentTypeController.dispose();
     _skillsRequiredController.dispose();
     _salaryController.dispose();
-    
+
     // 活动组队
     _activityNameController.dispose();
     _teamRequirementsController.dispose();
-    
+
     super.dispose();
   }
 
+  // 根据选择的类别格式化内容
   String _formatContent() {
     String formattedContent = '';
-    
+
     switch (_selectedCategory) {
       case '二手交易':
         formattedContent = '''
@@ -77,7 +158,7 @@ ${_contentController.text}
 ${_tradeLinkController.text.isNotEmpty ? "【交易链接】${_tradeLinkController.text}" : ""}
 ''';
         break;
-        
+
       case '校园招聘':
         formattedContent = '''
 【招聘需求】${_titleController.text}
@@ -88,7 +169,7 @@ ${_tradeLinkController.text.isNotEmpty ? "【交易链接】${_tradeLinkControll
 ${_contentController.text}
 ''';
         break;
-        
+
       case '活动组队':
         formattedContent = '''
 【活动名称】${_activityNameController.text}
@@ -97,79 +178,85 @@ ${_contentController.text}
 ${_contentController.text}
 ''';
         break;
-        
+
       case '畅言/其他':
       default:
         formattedContent = _contentController.text;
         break;
     }
-    
+
     return formattedContent;
   }
 
+  // 提交帖子
   void _submitPost() async {
     final title = _titleController.text.trim();
-    
-    // 基本验证
-    if (title.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('请输入标题')),
-      );
+    // 检查身份验证
+    if (!_timetableVerified) {
+      _showTimetableVerificationDialog();
       return;
     }
-    
+
+    // 基本验证
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('请输入标题')));
+      return;
+    }
+
     // 针对不同类别的表单验证
     if (_selectedCategory == '二手交易') {
       if (_priceController.text.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('请输入价格')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('请输入价格')));
         return;
       }
     } else if (_selectedCategory == '校园招聘') {
       if (_talentTypeController.text.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('请输入需要的人才类别')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('请输入需要的人才类别')));
         return;
       }
     } else if (_selectedCategory == '活动组队') {
       if (_activityNameController.text.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('请输入活动名称')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('请输入活动名称')));
         return;
       }
     } else if (_contentController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('请输入内容')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('请输入内容')));
       return;
     }
-    
+
     setState(() {
       _isLoading = true;
     });
-    
+
     try {
       // 格式化内容
       final formattedContent = _formatContent();
-      
+
       await Provider.of<PostProvider>(context, listen: false).createPost(
         title: title,
         content: formattedContent,
         category: _selectedCategory,
       );
-      
+
       Navigator.of(context).pop(); // 返回上一页
     } catch (e) {
       setState(() {
         _isLoading = false;
       });
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('发布失败: $e')),
-      );
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('发布失败: $e')));
     }
   }
 
@@ -191,7 +278,7 @@ ${_contentController.text}
               maxLength: 30,
             ),
             SizedBox(height: 15),
-            
+
             // 价格输入
             TextField(
               controller: _priceController,
@@ -204,7 +291,7 @@ ${_contentController.text}
               keyboardType: TextInputType.number,
             ),
             SizedBox(height: 15),
-            
+
             // 物品状况
             TextField(
               controller: _conditionController,
@@ -215,7 +302,7 @@ ${_contentController.text}
               ),
             ),
             SizedBox(height: 15),
-            
+
             // 使用年限
             TextField(
               controller: _usageYearsController,
@@ -226,7 +313,7 @@ ${_contentController.text}
               ),
             ),
             SizedBox(height: 15),
-            
+
             // 详细描述
             TextField(
               controller: _contentController,
@@ -240,7 +327,7 @@ ${_contentController.text}
               maxLength: 300,
             ),
             SizedBox(height: 15),
-            
+
             // 交易链接（可选）
             TextField(
               controller: _tradeLinkController,
@@ -252,7 +339,7 @@ ${_contentController.text}
             ),
           ],
         );
-        
+
       case '校园招聘':
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -268,7 +355,7 @@ ${_contentController.text}
               maxLength: 30,
             ),
             SizedBox(height: 15),
-            
+
             // 人才类别
             TextField(
               controller: _talentTypeController,
@@ -279,7 +366,7 @@ ${_contentController.text}
               ),
             ),
             SizedBox(height: 15),
-            
+
             // 专业知识
             TextField(
               controller: _skillsRequiredController,
@@ -291,7 +378,7 @@ ${_contentController.text}
               maxLines: 2,
             ),
             SizedBox(height: 15),
-            
+
             // 薪酬
             TextField(
               controller: _salaryController,
@@ -302,7 +389,7 @@ ${_contentController.text}
               ),
             ),
             SizedBox(height: 15),
-            
+
             // 详细描述
             TextField(
               controller: _contentController,
@@ -317,7 +404,7 @@ ${_contentController.text}
             ),
           ],
         );
-        
+
       case '活动组队':
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -333,7 +420,7 @@ ${_contentController.text}
               maxLength: 30,
             ),
             SizedBox(height: 15),
-            
+
             // 活动名称
             TextField(
               controller: _activityNameController,
@@ -344,7 +431,7 @@ ${_contentController.text}
               ),
             ),
             SizedBox(height: 15),
-            
+
             // 搭档要求
             TextField(
               controller: _teamRequirementsController,
@@ -356,7 +443,7 @@ ${_contentController.text}
               maxLines: 2,
             ),
             SizedBox(height: 15),
-            
+
             // 详细描述
             TextField(
               controller: _contentController,
@@ -371,7 +458,7 @@ ${_contentController.text}
             ),
           ],
         );
-        
+
       case '畅言/其他':
       default:
         return Column(
@@ -388,7 +475,7 @@ ${_contentController.text}
               maxLength: 30,
             ),
             SizedBox(height: 15),
-            
+
             // 内容输入
             TextField(
               controller: _contentController,
@@ -428,129 +515,151 @@ ${_contentController.text}
             ),
         ],
       ),
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 选择分类
-                  Text(
-                    '选择分类',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: _categories.map((category) {
-                      final isSelected = _selectedCategory == category;
-                      final color = AppTheme.categoryColors[category] ?? AppTheme.primaryColor;
-                      
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _selectedCategory = category;
-                          });
-                        },
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 15,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isSelected ? color : color.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: color,
-                              width: 1,
-                            ),
-                          ),
-                          child: Text(
-                            category,
-                            style: TextStyle(
-                              color: isSelected ? Colors.white : color,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  SizedBox(height: 25),
-                  
-                  // 动态渲染不同类别的表单
-                  _buildCategoryFields(),
-                  
-                  SizedBox(height: 20),
-                  
-                  // 预览帖子内容
-                  if (_selectedCategory != '畅言/其他' && 
-                      (_titleController.text.isNotEmpty || 
-                       _contentController.text.isNotEmpty))
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Divider(),
-                        Text(
-                          '帖子预览',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        SizedBox(height: 10),
-                        Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.all(15),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.grey.shade300),
-                          ),
-                          child: Text(
-                            _formatContent(),
-                            style: TextStyle(
-                              fontSize: 14,
-                              height: 1.5,
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 20),
-                      ],
-                    ),
-                  
-                  // 提示
-                  Card(
-                    color: Colors.amber.shade50,
-                    child: Padding(
-                      padding: const EdgeInsets.all(10.0),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            color: Colors.amber.shade800,
-                          ),
-                          SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              '发布后，系统会为您生成随机马甲名，确保您的隐私安全',
-                              style: TextStyle(
-                                color: Colors.amber.shade800,
+      body:
+          _isLoading
+              ? Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                padding: EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Card(
+                      color: Colors.red.shade50,
+                      margin: EdgeInsets.only(bottom: 20),
+                      child: Padding(
+                        padding: const EdgeInsets.all(10.0),
+                        child: Row(
+                          children: [
+                            Icon(Icons.warning, color: Colors.red),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                '发帖前需要验证您的学生身份',
+                                style: TextStyle(color: Colors.red),
                               ),
                             ),
-                          ),
-                        ],
+                            TextButton(
+                              onPressed: _navigateToTimetableVerification,
+                              child: Text('去验证'),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                    // 选择分类
+                    Text(
+                      '选择分类',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children:
+                          _categories.map((category) {
+                            final isSelected = _selectedCategory == category;
+                            final color =
+                                AppTheme.categoryColors[category] ??
+                                AppTheme.primaryColor;
+
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _selectedCategory = category;
+                                });
+                              },
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 15,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      isSelected
+                                          ? color
+                                          : color.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: color, width: 1),
+                                ),
+                                child: Text(
+                                  category,
+                                  style: TextStyle(
+                                    color: isSelected ? Colors.white : color,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                    ),
+                    SizedBox(height: 25),
+
+                    // 动态渲染不同类别的表单
+                    _buildCategoryFields(),
+
+                    SizedBox(height: 20),
+
+                    // 预览帖子内容
+                    if (_selectedCategory != '畅言/其他' &&
+                        (_titleController.text.isNotEmpty ||
+                            _contentController.text.isNotEmpty))
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Divider(),
+                          Text(
+                            '帖子预览',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          SizedBox(height: 10),
+                          Container(
+                            width: double.infinity,
+                            padding: EdgeInsets.all(15),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: Text(
+                              _formatContent(),
+                              style: TextStyle(fontSize: 14, height: 1.5),
+                            ),
+                          ),
+                          SizedBox(height: 20),
+                        ],
+                      ),
+
+                    // 提示
+                    Card(
+                      color: Colors.amber.shade50,
+                      child: Padding(
+                        padding: const EdgeInsets.all(10.0),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              color: Colors.amber.shade800,
+                            ),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                '发布后，系统会为您生成随机马甲名，确保您的隐私安全',
+                                style: TextStyle(color: Colors.amber.shade800),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
     );
   }
 }
