@@ -7,8 +7,8 @@ plugins {
 
 android {
     namespace = "com.example.shida_calendar"
-    compileSdk = 35
-    ndkVersion = "29.0.13113456"
+    compileSdk = flutter.compileSdkVersion
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8

@@ -86,3 +86,4 @@ ios/Pods/
 **/ios/Flutter/Generated.xcconfig
 **/ios/.symlinks/
 **/ios/Pods/
+android/app/build.gradle.kts
