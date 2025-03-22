@@ -346,9 +346,9 @@ class TimetableParser {
       fullNotes += '地点: $location\n';
     }
     if (notes.isNotEmpty) {
-      fullNotes += notes + '\n';
+      fullNotes += '$notes\n';
     }
-    fullNotes += '第${week}周 周${_getDayName(dayOfWeek)}';
+    fullNotes += '第$week周 周${_getDayName(dayOfWeek)}';
 
     // 创建事件
     return CalendarEvent(

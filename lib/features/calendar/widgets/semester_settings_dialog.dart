@@ -7,10 +7,10 @@ class SemesterSettingsDialog extends StatefulWidget {
   final bool isFirstTime;
   
   const SemesterSettingsDialog({
-    Key? key,
+    super.key,
     this.currentFirstWeek,
     this.isFirstTime = false,
-  }) : super(key: key);
+  });
 
   @override
   _SemesterSettingsDialogState createState() => _SemesterSettingsDialogState();

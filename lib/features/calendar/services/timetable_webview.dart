@@ -15,12 +15,12 @@ class TimetableWebView extends StatefulWidget {
   final Function(bool success)? onVerificationComplete; // 添加此回调
 
   const TimetableWebView({
-    Key? key,
+    super.key,
     required this.onEventsImported,
     this.userId,
     this.isVerification = false,
     this.onVerificationComplete,
-  }) : super(key: key);
+  });
 
   @override
   State<TimetableWebView> createState() => _TimetableWebViewState();
@@ -98,7 +98,7 @@ class _TimetableWebViewState extends State<TimetableWebView> {
         int count = int.parse(iframesCount.toString());
         for (int i = 0; i < count; i++) {
           final iframeSrc = await _controller.runJavaScriptReturningResult(
-            'document.querySelectorAll("iframe")[' + i.toString() + '].src',
+            'document.querySelectorAll("iframe")[$i].src',
           );
 
           if (iframeSrc.toString().contains('xskb_list') ||
@@ -250,10 +250,10 @@ class _TimetableWebViewState extends State<TimetableWebView> {
         for (int i = 0; i < count; i++) {
           // Get iframe source or name to identify the right one
           final iframeSrc = await _controller.runJavaScriptReturningResult(
-            'document.querySelectorAll("iframe")[' + i.toString() + '].src',
+            'document.querySelectorAll("iframe")[$i].src',
           );
           final iframeName = await _controller.runJavaScriptReturningResult(
-            'document.querySelectorAll("iframe")[' + i.toString() + '].name',
+            'document.querySelectorAll("iframe")[$i].name',
           );
 
           print('Iframe $i - src: $iframeSrc, name: $iframeName');
@@ -268,7 +268,7 @@ class _TimetableWebViewState extends State<TimetableWebView> {
                 .runJavaScriptReturningResult('''
               (function() {
                 try {
-                  const iframe = document.querySelectorAll("iframe")[${i}];
+                  const iframe = document.querySelectorAll("iframe")[$i];
                   if (iframe.contentDocument) {
                     return iframe.contentDocument.documentElement.outerHTML;
                   } else {
@@ -304,7 +304,7 @@ class _TimetableWebViewState extends State<TimetableWebView> {
               await _controller.runJavaScript('''
                 (function() {
                   try {
-                    const iframe = document.querySelectorAll("iframe")[${i}];
+                    const iframe = document.querySelectorAll("iframe")[$i];
                     // 创建一个脚本，让iframe将其内容发送到主页面
                     const script = document.createElement('script');
                     script.textContent = `
@@ -416,7 +416,7 @@ class _TimetableWebViewState extends State<TimetableWebView> {
         }
 
         if (tbodyHtml.length > 100) {
-          html = "<html><body>" + tbodyHtml + "</body></html>";
+          html = "<html><body>$tbodyHtml</body></html>";
           foundTarget = true;
         }
       }
@@ -479,38 +479,6 @@ class _TimetableWebViewState extends State<TimetableWebView> {
     }
   }
 
-  // void _showTableDebugDialog() {
-  //   showDialog(
-  //     context: context,
-  //     builder:
-  //         (context) => AlertDialog(
-  //           title: const Text('调试信息'),
-  //           content: const Column(
-  //             mainAxisSize: MainAxisSize.min,
-  //             crossAxisAlignment: CrossAxisAlignment.start,
-  //             children: [
-  //               Text('未在页面上找到课程表元素。可能的原因：'),
-  //               SizedBox(height: 8),
-  //               Text('1. 未登录或未导航到正确的课表页面'),
-  //               Text('2. 学校教务系统更新，表格ID或结构已变化'),
-  //               Text('3. 页面未完全加载，请尝试点击刷新后再解析'),
-  //               SizedBox(height: 16),
-  //               Text('请尝试的操作：'),
-  //               Text('- 手动在页面中导航到"学期理论课表"'),
-  //               Text('- 确保课表已经完全显示在页面上'),
-  //               Text('- 刷新页面后再次尝试'),
-  //             ],
-  //           ),
-  //           actions: [
-  //             TextButton(
-  //               onPressed: () => Navigator.of(context).pop(),
-  //               child: const Text('了解'),
-  //             ),
-  //           ],
-  //         ),
-  //   );
-  // }
-
   void _showParsingDebugDialog(String html) {
     showDialog(
       context: context,
@@ -533,29 +501,15 @@ class _TimetableWebViewState extends State<TimetableWebView> {
                 Text('HTML长度: ${html.length}字符'),
               ],
             ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  // 尝试使用更宽松的解析方式（实际应用中可能需要实现）
-                  Navigator.of(context).pop();
-                  _showMessage('尝试使用备选解析方式...');
-                },
-                child: const Text('尝试备选解析'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('关闭'),
-              ),
-            ],
           ),
     );
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
+  // void _showMessage(String message) {
+  //   ScaffoldMessenger.of(
+  //     context,
+  //   ).showSnackBar(SnackBar(content: Text(message)));
+  // }
 
   // 帮助函数
   int min(int a, int b) => a < b ? a : b;

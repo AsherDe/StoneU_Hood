@@ -8,10 +8,12 @@ import '../../../core/constants/app_theme.dart';
 class ChatScreen extends StatefulWidget {
   final String chatId;
   final String receiverVestName;
+  final String postId;
   
-  ChatScreen({
+  const ChatScreen({super.key, 
     required this.chatId,
     required this.receiverVestName,
+    required this.postId,
   });
   
   @override
@@ -111,6 +113,7 @@ class _ChatScreenState extends State<ChatScreen> {
         _isSending = false;
       });
     }
+    _loadMessages();
   }
 
   @override

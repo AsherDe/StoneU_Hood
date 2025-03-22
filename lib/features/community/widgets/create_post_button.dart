@@ -5,7 +5,7 @@ import '../../../core/constants/app_theme.dart';
 class CreatePostButton extends StatelessWidget {
   final VoidCallback onPressed;
   
-  CreatePostButton({required this.onPressed});
+  const CreatePostButton({super.key, required this.onPressed});
   
   @override
   Widget build(BuildContext context) {
@@ -25,13 +25,13 @@ class CreatePostButton extends StatelessWidget {
       child: FloatingActionButton(
         onPressed: onPressed,
         backgroundColor: AppTheme.primaryColor,
+        elevation: 0,
+        highlightElevation: 0,
         child: Icon(
           Icons.add,
           size: 30,
           color: Colors.white,
         ),
-        elevation: 0,
-        highlightElevation: 0,
       ),
     );
   }

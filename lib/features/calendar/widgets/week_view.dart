@@ -231,8 +231,9 @@ class _WeekViewState extends State<WeekView> {
                   day.day == event.startTime.day,
             );
 
-            if (dayIndex == -1)
+            if (dayIndex == -1) {
               return Container(); // Skip if not in current week
+            }
 
             final left = WeekView.TIME_COLUMN_WIDTH + (dayIndex * dayWidth);
             final top = _calculateTimePosition(event.startTime);
@@ -287,7 +288,7 @@ class _WeekViewState extends State<WeekView> {
                 ),
               ),
             );
-          }).toList(),
+          }),
 
           // 时间指示器（红色）
           if (todayIndex >= 0)

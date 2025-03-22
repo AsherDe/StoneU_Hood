@@ -6,10 +6,10 @@ class ReminderMultiSelect extends StatefulWidget {
   final Function(List<int>) onChanged;
 
   const ReminderMultiSelect({
-    Key? key,
+    super.key,
     required this.initialValue,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   @override 
   _ReminderMultiSelectState createState() => _ReminderMultiSelectState();

@@ -11,7 +11,7 @@ import '../screens/chat_screen.dart';
 class PostCard extends StatelessWidget {
   final Post post;
 
-  PostCard({required this.post});
+  const PostCard({super.key, required this.post});
 
   @override
   Widget build(BuildContext context) {
@@ -159,13 +159,14 @@ class PostCard extends StatelessWidget {
   void _startPrivateChat(BuildContext context) async {
     try {
       final chatId = await Provider.of<ChatProvider>(context, listen: false)
-          .createPrivateChat(post.userId, post.vestName);
+          .createPrivateChat(post.userId, post.vestName, post.id);
           
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => ChatScreen(
             chatId: chatId,
             receiverVestName: post.vestName,
+            postId: post.id,
           ),
         ),
       );

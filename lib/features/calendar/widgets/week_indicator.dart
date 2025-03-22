@@ -11,13 +11,13 @@ class WeekIndicator extends StatelessWidget {
   final bool isCurrentWeek;
 
   const WeekIndicator({
-    Key? key,
+    super.key,
     required this.startOfWeek,
     required this.endOfWeek,
     required this.weekNumber,
     required this.onTap,
     this.isCurrentWeek = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +37,7 @@ class WeekIndicator extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '第${weekNumber}周',
+              '第$weekNumber周',
               style: TextStyle(
                 color: isCurrentWeek ? ThemeConstants.currentColor : ThemeConstants.upcomingColor,
                 fontWeight: isCurrentWeek ? FontWeight.bold : FontWeight.normal,

@@ -6,6 +6,8 @@ import '../../../core/constants/app_theme.dart';
 import './home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
@@ -136,7 +138,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       '手机号登录/注册',
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
-
                     SizedBox(height: 20),
                     TextField(
                       controller: _phoneController,

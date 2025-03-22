@@ -23,10 +23,13 @@ class ChatProvider with ChangeNotifier {
     notifyListeners();
   }
   
-  Future<String> createPrivateChat(String receiverId, String receiverVestName) async {
+  Future<String> createPrivateChat(String receiverId, String receiverVestName, String postId) async {
     final response = await apiService.post(
       '/chats',
-      {'receiverId': receiverId},
+      {
+        'receiverId': receiverId,
+        'postId': postId,
+      },
     );
     
     // 检查聊天是否已存在
@@ -37,6 +40,7 @@ class ChatProvider with ChangeNotifier {
         id: response['id'],
         otherUserId: receiverId,
         otherVestName: receiverVestName,
+        postId: postId,
         lastMessage: '',
         lastMessageTime: DateTime.now(),
         unreadCount: 0,
@@ -60,6 +64,7 @@ class ChatProvider with ChangeNotifier {
         id: _chats[chatIndex].id,
         otherUserId: _chats[chatIndex].otherUserId,
         otherVestName: _chats[chatIndex].otherVestName,
+        postId: _chats[chatIndex].postId,
         lastMessage: _chats[chatIndex].lastMessage,
         lastMessageTime: _chats[chatIndex].lastMessageTime,
         unreadCount: 0,
@@ -86,6 +91,7 @@ class ChatProvider with ChangeNotifier {
         id: _chats[chatIndex].id,
         otherUserId: _chats[chatIndex].otherUserId,
         otherVestName: _chats[chatIndex].otherVestName,
+        postId: _chats[chatIndex].postId,
         lastMessage: content,
         lastMessageTime: DateTime.now(),
         unreadCount: 0,

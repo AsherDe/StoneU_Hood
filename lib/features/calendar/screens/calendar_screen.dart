@@ -18,6 +18,8 @@ import 'settings_screen.dart';
 import '../services/calendar_sync_service.dart';
 
 class CalendarScreen extends StatefulWidget {
+  const CalendarScreen({super.key});
+
   @override
   _CalendarScreenState createState() => _CalendarScreenState();
 }
@@ -398,7 +400,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       builder: (context) {
         return AlertDialog(
           title: Text('选择周次'),
-          content: Container(
+          content: SizedBox(
             width: double.maxFinite,
             child: ListView.builder(
               shrinkWrap: true,
@@ -409,8 +411,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 final weekEnd = weekStart?.add(Duration(days: 6));
                 final isCurrent = _getCurrentWeekNumber() == weekNum;
 
-                if (weekStart == null || weekEnd == null)
+                if (weekStart == null || weekEnd == null) {
                   return SizedBox.shrink();
+                }
 
                 return ListTile(
                   title: Text('第$weekNum周'),
@@ -583,20 +586,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
             icon: Icon(Icons.help_outline, color: ThemeConstants.currentColor),
             onPressed: _showHelpDialog,
             tooltip: '使用帮助',
+
           ),
-          IconButton(
-            icon: Icon(Icons.settings, color: ThemeConstants.currentColor),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => SettingsScreen()),
-              ).then((_) {
-                // 返回后刷新数据
-                _loadEvents();
-              });
-            },
-            tooltip: '设置',
-          ),
+          
           IconButton(
             icon: Icon(Icons.add, color: ThemeConstants.currentColor),
             onPressed: _showAddEventDialog,
@@ -609,7 +601,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
               switch (value) {
                 case 'import':
                   _handleImport();
+                  break; 
+
+                case 'settings':
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => SettingsScreen()),
+                  ).then((_) {
+                    // 返回后刷新数据
+                    _loadEvents();
+                  });
                   break;
+
                 case 'about':
                   _showAboutDialog();
                   break;
@@ -643,6 +646,21 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       ],
                     ),
                   ),
+
+
+                  PopupMenuItem(
+                    value: 'settnigs',
+                    child:Row(
+                      children: [
+                        Icon(Icons.settings, color: ThemeConstants.currentColor),
+                        SizedBox(width: 8),
+                        Text('设置'),
+                      ],
+                    ),
+                  ),
+
+
+
                   PopupMenuItem(
                     value: 'about',
                     child: Row(
@@ -837,7 +855,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    SizedBox(height: 20),
+                    SizedBox(height: 10),
                   ],
                 ),
               ),
@@ -852,18 +870,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   void _showEditEventDialog(CalendarEvent? eventToEdit) {
-    final _formKey = GlobalKey<FormState>();
-    final _titleController = TextEditingController(
+    final formKey = GlobalKey<FormState>();
+    final titleController = TextEditingController(
       text: eventToEdit?.title ?? '',
     );
-    final _notesController = TextEditingController(
+    final notesController = TextEditingController(
       text: eventToEdit?.notes ?? '',
     );
-    DateTime _startTime = eventToEdit?.startTime ?? DateTime.now();
-    DateTime _endTime =
+    DateTime startTime = eventToEdit?.startTime ?? DateTime.now();
+    DateTime endTime =
         eventToEdit?.endTime ?? DateTime.now().add(Duration(hours: 1));
-    String _selectedColor = eventToEdit?.color ?? '#FF2D55';
-    List<int> _selectedReminders = eventToEdit?.reminderMinutes ?? [20];
+    String selectedColor = eventToEdit?.color ?? '#FF2D55';
+    List<int> selectedReminders = eventToEdit?.reminderMinutes ?? [20];
 
     showDialog(
       context: context,
@@ -874,31 +892,31 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 title: Text(eventToEdit == null ? '添加事件' : '编辑事件'),
                 content: SingleChildScrollView(
                   child: Form(
-                    key: _formKey,
+                    key: formKey,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         TextFormField(
-                          controller: _titleController,
+                          controller: titleController,
                           decoration: InputDecoration(labelText: '标题'),
                           validator:
                               (value) =>
                                   value?.isEmpty ?? true ? '请输入标题' : null,
                         ),
                         TextFormField(
-                          controller: _notesController,
+                          controller: notesController,
                           decoration: InputDecoration(labelText: '备注'),
                           maxLines: 3,
                         ),
                         ListTile(
                           title: Text('开始时间'),
                           subtitle: Text(
-                            DateFormat('yyyy-MM-dd HH:mm').format(_startTime),
+                            DateFormat('yyyy-MM-dd HH:mm').format(startTime),
                           ),
                           onTap: () async {
                             final date = await showDatePicker(
                               context: context,
-                              initialDate: _startTime,
+                              initialDate: startTime,
                               firstDate: DateTime.now().subtract(
                                 Duration(days: 365),
                               ),
@@ -907,11 +925,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             if (date != null) {
                               final time = await showTimePicker(
                                 context: context,
-                                initialTime: TimeOfDay.fromDateTime(_startTime),
+                                initialTime: TimeOfDay.fromDateTime(startTime),
                               );
                               if (time != null) {
                                 setState(() {
-                                  _startTime = DateTime(
+                                  startTime = DateTime(
                                     date.year,
                                     date.month,
                                     date.day,
@@ -926,12 +944,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         ListTile(
                           title: Text('结束时间'),
                           subtitle: Text(
-                            DateFormat('yyyy-MM-dd HH:mm').format(_endTime),
+                            DateFormat('yyyy-MM-dd HH:mm').format(endTime),
                           ),
                           onTap: () async {
                             final date = await showDatePicker(
                               context: context,
-                              initialDate: _endTime,
+                              initialDate: endTime,
                               firstDate: DateTime.now().subtract(
                                 Duration(days: 365),
                               ),
@@ -940,11 +958,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             if (date != null) {
                               final time = await showTimePicker(
                                 context: context,
-                                initialTime: TimeOfDay.fromDateTime(_endTime),
+                                initialTime: TimeOfDay.fromDateTime(endTime),
                               );
                               if (time != null) {
                                 setState(() {
-                                  _endTime = DateTime(
+                                  endTime = DateTime(
                                     date.year,
                                     date.month,
                                     date.day,
@@ -958,10 +976,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         ),
                         // 添加提醒选择
                         ReminderMultiSelect(
-                          initialValue: _selectedReminders,
+                          initialValue: selectedReminders,
                           onChanged: (List<int> value) {
                             setState(() {
-                              _selectedReminders = value;
+                              selectedReminders = value;
                             });
                           },
                         ),
@@ -997,7 +1015,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                           (color) => GestureDetector(
                                             onTap: () {
                                               setState(() {
-                                                _selectedColor = color;
+                                                selectedColor = color;
                                               });
                                             },
                                             child: Container(
@@ -1015,7 +1033,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                                 shape: BoxShape.circle,
                                                 border: Border.all(
                                                   color:
-                                                      _selectedColor == color
+                                                      selectedColor == color
                                                           ? Colors.black
                                                           : Colors.transparent,
                                                   width: 2,
@@ -1058,12 +1076,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                         () => Navigator.of(context).pop(false),
                                   ),
                                   TextButton(
-                                    child: Text('删除'),
                                     style: TextButton.styleFrom(
                                       foregroundColor: Colors.red,
                                     ),
                                     onPressed:
                                         () => Navigator.of(context).pop(true),
+                                    child: Text('删除'),
                                   ),
                                 ],
                               ),
@@ -1106,8 +1124,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   TextButton(
                     child: Text('保存'),
                     onPressed: () async {
-                      if (_formKey.currentState?.validate() ?? false) {
-                        if (_endTime.isBefore(_startTime)) {
+                      if (formKey.currentState?.validate() ?? false) {
+                        if (endTime.isBefore(startTime)) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text('结束时间不能早于开始时间')),
                           );
@@ -1116,8 +1134,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
                         // 检查时间冲突，但排除正在编辑的事件
                         if (_hasTimeConflict(
-                          _startTime,
-                          _endTime,
+                          startTime,
+                          endTime,
                           eventToEdit,
                         )) {
                           final shouldProceed = await showDialog<bool>(
@@ -1146,12 +1164,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         }
 
                         final event = CalendarEvent(
-                          title: _titleController.text,
-                          notes: _notesController.text,
-                          startTime: _startTime,
-                          endTime: _endTime,
-                          reminderMinutes: _selectedReminders,
-                          color: _selectedColor,
+                          title: titleController.text,
+                          notes: notesController.text,
+                          startTime: startTime,
+                          endTime: endTime,
+                          reminderMinutes: selectedReminders,
+                          color: selectedColor,
                         );
 
                         if (eventToEdit != null) {

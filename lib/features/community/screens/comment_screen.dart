@@ -8,7 +8,7 @@ import '../../../core/constants/app_theme.dart';
 class CommentScreen extends StatefulWidget {
   final String postId;
   
-  CommentScreen({required this.postId});
+  const CommentScreen({super.key, required this.postId});
   
   @override
   _CommentScreenState createState() => _CommentScreenState();

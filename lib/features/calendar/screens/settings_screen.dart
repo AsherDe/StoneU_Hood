@@ -6,6 +6,8 @@ import '../services/event_repository.dart';
 import '../../../core/constants/calendar_theme.dart';
 
 class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
+
   @override
   _SettingsScreenState createState() => _SettingsScreenState();
 }
@@ -106,7 +108,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             content:
                 _availableCalendars.isEmpty
                     ? Text('没有找到可用的系统日历，请先创建一个系统日历')
-                    : Container(
+                    : SizedBox(
                       width: double.maxFinite,
                       child: ListView.builder(
                         shrinkWrap: true,
