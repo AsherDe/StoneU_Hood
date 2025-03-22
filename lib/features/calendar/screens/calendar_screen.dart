@@ -586,20 +586,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
             icon: Icon(Icons.help_outline, color: ThemeConstants.currentColor),
             onPressed: _showHelpDialog,
             tooltip: '使用帮助',
+
           ),
-          IconButton(
-            icon: Icon(Icons.settings, color: ThemeConstants.currentColor),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => SettingsScreen()),
-              ).then((_) {
-                // 返回后刷新数据
-                _loadEvents();
-              });
-            },
-            tooltip: '设置',
-          ),
+          
           IconButton(
             icon: Icon(Icons.add, color: ThemeConstants.currentColor),
             onPressed: _showAddEventDialog,
@@ -612,7 +601,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
               switch (value) {
                 case 'import':
                   _handleImport();
+                  break; 
+
+                case 'settings':
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => SettingsScreen()),
+                  ).then((_) {
+                    // 返回后刷新数据
+                    _loadEvents();
+                  });
                   break;
+
                 case 'about':
                   _showAboutDialog();
                   break;
@@ -646,6 +646,21 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       ],
                     ),
                   ),
+
+
+                  PopupMenuItem(
+                    value: 'settnigs',
+                    child:Row(
+                      children: [
+                        Icon(Icons.settings, color: ThemeConstants.currentColor),
+                        SizedBox(width: 8),
+                        Text('设置'),
+                      ],
+                    ),
+                  ),
+
+
+
                   PopupMenuItem(
                     value: 'about',
                     child: Row(
