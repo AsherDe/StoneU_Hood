@@ -20,7 +20,7 @@ class _SearchScreenState extends State<SearchScreen> {
   final List<String> _categories = [
     '全部',
     '二手交易',
-    '兼职/需求',
+    '校园招聘',
     '活动组队',
     '畅言/其他',
   ];

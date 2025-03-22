@@ -134,6 +134,7 @@ class EventRepository {
 
   Future<DateTime?> getActiveFirstWeekDate() async {
     final db = await database;
+    final defaultStartDate = DateTime(2025, 2, 24); // 设置默认日期为2025年2月24日
     try {
       final result = await db.query(
         'semester_settings',
@@ -141,7 +142,7 @@ class EventRepository {
         limit: 1,
       );
 
-      if (result.isEmpty) return null;
+      if (result.isEmpty) return defaultStartDate;
       return DateTime.parse(result.first['first_week_date'] as String);
     } catch (e) {
       // 表不存在或其他错误

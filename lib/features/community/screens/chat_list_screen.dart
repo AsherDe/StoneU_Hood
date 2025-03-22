@@ -28,9 +28,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
     try {
       await Provider.of<ChatProvider>(context, listen: false).fetchChats();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('获取聊天列表失败: $e')),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text('获取聊天列表失败: $e')),
+      // );
     } finally {
       setState(() {
         _isLoading = false;

@@ -45,9 +45,9 @@ class _CommentScreenState extends State<CommentScreen> {
         _comments = comments;
       });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('获取评论失败: $e')),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text('获取评论失败: $e')),
+      // );
     } finally {
       setState(() {
         _isLoading = false;

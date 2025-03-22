@@ -74,7 +74,7 @@ class ChatProvider with ChangeNotifier {
   }
   
   Future<void> sendMessage(String chatId, String content) async {
-    final response = await apiService.post(
+    final _ = await apiService.post(
       '/chats/$chatId/messages',
       {'content': content},
     );
