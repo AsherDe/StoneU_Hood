@@ -256,7 +256,7 @@ ${_contentController.text}
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('发布失败: $e')));
+      ).showSnackBar(SnackBar(content: Text('发布失败，请确认是否已经在日历中导入课表: $e')));
     }
   }
 
@@ -523,29 +523,31 @@ ${_contentController.text}
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Card(
-                      color: Colors.red.shade50,
-                      margin: EdgeInsets.only(bottom: 20),
-                      child: Padding(
-                        padding: const EdgeInsets.all(10.0),
-                        child: Row(
-                          children: [
-                            Icon(Icons.warning, color: Colors.red),
-                            SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                '发帖前需要验证您的学生身份',
-                                style: TextStyle(color: Colors.red),
-                              ),
+                    _timetableVerified
+                        ? Container()
+                        : Card(
+                          color: Colors.red.shade50,
+                          margin: EdgeInsets.only(bottom: 20),
+                          child: Padding(
+                            padding: const EdgeInsets.all(10.0),
+                            child: Row(
+                              children: [
+                                Icon(Icons.warning, color: Colors.red),
+                                SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    '发帖前需要验证您的学生身份',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: _navigateToTimetableVerification,
+                                  child: Text('去验证'),
+                                ),
+                              ],
                             ),
-                            TextButton(
-                              onPressed: _navigateToTimetableVerification,
-                              child: Text('去验证'),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
                     // 选择分类
                     Text(
                       '选择分类',

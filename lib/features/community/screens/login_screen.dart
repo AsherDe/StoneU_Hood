@@ -138,54 +138,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       '手机号登录/注册',
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
-<<<<<<< HEAD
-                    SizedBox(height: 10),
-                    // 课表验证状态指示器
-                    Container(
-                      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: _timetableVerified 
-                            ? Colors.green.withOpacity(0.1) 
-                            : Colors.red.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _timetableVerified 
-                                ? Icons.check_circle 
-                                : Icons.error_outline,
-                            color: _timetableVerified ? Colors.green : Colors.red,
-                            size: 20,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            _timetableVerified 
-                                ? '身份已验证' 
-                                : '需要验证身份',
-                            style: TextStyle(
-                              color: _timetableVerified ? Colors.green : Colors.red,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (!_timetableVerified)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
-                        child: TextButton(
-                          onPressed: _navigateToTimetableVerification,
-                          style: TextButton.styleFrom(
-                            foregroundColor: AppTheme.primaryColor,
-                          ),
-                          child: Text('点击验证身份'),
-                        ),
-                      ),
-=======
-
->>>>>>> gitee/auto-15499326-main-fd46b1ad-1
                     SizedBox(height: 20),
                     TextField(
                       controller: _phoneController,
