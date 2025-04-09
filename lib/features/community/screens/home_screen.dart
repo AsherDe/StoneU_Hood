@@ -102,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
     
     return Scaffold(
       appBar: AppBar(
-        title: Text('校园互助平台'),
+        title: Text('青春集市'),
         backgroundColor: AppTheme.primaryColor,
         centerTitle: true,
         actions: [

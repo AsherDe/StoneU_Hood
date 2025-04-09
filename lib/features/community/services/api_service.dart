@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class ApiService {
-  final String baseUrl = 'http://47.238.216.223:8080/api';
+  final String baseUrl = 'http://stoneu.uend.top:8080/api';
   final storage = FlutterSecureStorage();
 
   Future<String?> _getToken() async {
