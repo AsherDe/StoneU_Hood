@@ -17,6 +17,9 @@ import 'features/community/screens/login_screen.dart';
 import 'features/calendar/screens/calendar_screen.dart';
 import 'features/calendar/services/calendar_sync_service.dart';
 
+// AI features
+import 'features/ai/screens/ai_assistant_screen.dart';
+
 // Chat Screen
 import 'features/community/screens/chat_list_screen.dart'; // Assuming this exists
 
@@ -103,6 +106,7 @@ class _MainTabScreenState extends State<MainTabScreen> {
   final List<Widget> _screens = [
     HomeScreen(), // 社区主页
     CalendarScreen(), // 日历页面
+    AIAssistantScreen(), // AI助手页面
     ChatListScreen(), // 聊天列表页面
   ];
 
@@ -113,7 +117,8 @@ class _MainTabScreenState extends State<MainTabScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) async {
-          if (index == 2 || index == 0) {
+          // 针对社区主页(0)或聊天页面(3)需要登录验证
+          if (index == 0 || index == 3) {
             // 获取 AuthProvider
             final authProvider = Provider.of<AuthProvider>(
               context,
@@ -123,13 +128,10 @@ class _MainTabScreenState extends State<MainTabScreen> {
             // 异步检查认证和验证状态
             await authProvider.checkLoginStatus();
 
-            // print("DEBUG: authenticated=${authProvider.authenticated}, verified=${authProvider.verified}");
-
-            // 然后再检查状态
             if (!authProvider.authenticated) {
               ScaffoldMessenger.of(
                 context,
-              ).showSnackBar(SnackBar(content: Text('请先登录后再使用聊天功能')));
+              ).showSnackBar(SnackBar(content: Text('请先登录后再使用此功能')));
               Navigator.of(
                 context,
               ).push(MaterialPageRoute(builder: (_) => LoginScreen()));
@@ -144,6 +146,26 @@ class _MainTabScreenState extends State<MainTabScreen> {
               ScaffoldMessenger.of(
                 context,
               ).showSnackBar(SnackBar(content: Text('请先导入课程表完成验证')));
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => LoginScreen()));
+              return;
+            }
+          }
+          
+          // AI助手页面(2)也需要登录
+          if (index == 2) {
+            final authProvider = Provider.of<AuthProvider>(
+              context,
+              listen: false,
+            );
+
+            await authProvider.checkLoginStatus();
+
+            if (!authProvider.authenticated) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text('请先登录后再使用AI助手功能')));
               Navigator.of(
                 context,
               ).push(MaterialPageRoute(builder: (_) => LoginScreen()));
@@ -169,6 +191,11 @@ class _MainTabScreenState extends State<MainTabScreen> {
             icon: Icon(Icons.calendar_today_outlined),
             activeIcon: Icon(Icons.calendar_today),
             label: '日历',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.smart_toy_outlined),
+            activeIcon: Icon(Icons.smart_toy),
+            label: 'AI助手',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.chat_outlined),
