@@ -70,7 +70,7 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
       Map<String, dynamic>? weatherData;
       try {
         final weatherService = WeatherService();
-        weatherData = await weatherService.getWeather();
+        weatherData = await weatherService.getRealTimeWeather();
       } catch (e) {
         print('获取天气信息失败: $e');
       }
@@ -103,37 +103,6 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
         print('获取最新帖子失败: $e');
       }
       
-      // 使用LLM优化问候语（可选，当需要更个性化时）
-      try {
-        final prompt = """
-根据以下信息，优化生成一个个性化的问候语，语气要亲切自然:
-
-1. 基本问候: 
-$greeting
-
-2. 用户信息:
-${_formatUserKnowledgeForPrompt()}
-
-注意：保留原始问候语中的所有实用信息(日期、天气、课程等)，但可以优化语言表达，使其更流畅、更符合聊天风格。
-不要添加不确定的信息，确保返回的问候语是基于提供的信息。
-""";
-
-        // 尝试调用LLM优化问候语
-        final response = await _apiService.sendChatRequest(
-          prompt,
-          previousMessages: [],
-        );
-        
-        final enhancedGreeting = response['choices'][0]['message']['content'] as String;
-        
-        if (enhancedGreeting.length > 50) {
-          // 使用优化后的问候语
-          greeting = enhancedGreeting;
-        }
-      } catch (e) {
-        print('优化问候语失败，使用默认问候语: $e');
-      }
-      
       // 缓存问候语
       await _knowledgeService.cacheGreeting(greeting);
       
@@ -155,17 +124,6 @@ ${_formatUserKnowledgeForPrompt()}
         _isInitialGreetingSent = true;
       });
     }
-  }
-  
-  // 将用户知识格式化为提示词
-  String _formatUserKnowledgeForPrompt() {
-    final buffer = StringBuffer();
-    
-    _userKnowledge.forEach((key, value) {
-      buffer.writeln("- $key: $value");
-    });
-    
-    return buffer.toString();
   }
 
   Future<String> _getUserName() async {

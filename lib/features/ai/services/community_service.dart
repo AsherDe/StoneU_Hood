@@ -233,7 +233,7 @@ class CommunityService {
         likeCount: (i * 3) % 20,
         commentCount: (i * 2) % 15,
         isLiked: i % 3 == 0,
-        tags: ['标签$i', category, '石大生活'],
+        tags: ['标签$i', category, '校园生活'],
         imageUrl: i % 4 == 0 ? 'https://picsum.photos/200/300?random=$i' : null,
       ));
     }

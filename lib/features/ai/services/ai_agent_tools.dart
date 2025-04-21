@@ -19,8 +19,8 @@ class AIAgentTools {
   /// 获取石河子市天气信息，包含穿衣建议
   static Future<String> getWeather() async {
     try {
-      final weatherData = await _weatherService.getWeather();
-      final weatherText = WeatherService.formatWeatherToText(weatherData);
+      final weatherData = await _weatherService.getRealTimeWeather();
+      final weatherText = WeatherService.formatForecastToText(weatherData);
       final clothingSuggestion = getClothingSuggestion(weatherData);
       final umbrellaAdvice = getUmbrellaAdvice(weatherData);
       
@@ -52,8 +52,8 @@ $umbrellaAdvice''';
       };
       
       final cityCode = cityCodeMap[city] ?? '659001'; // 默认石河子市
-      final weatherData = await _weatherService.getWeather(cityCode: cityCode);
-      final weatherText = WeatherService.formatWeatherToText(weatherData);
+      final weatherData = await _weatherService.getRealTimeWeather(cityCode: cityCode);
+      final weatherText = WeatherService.formatForecastToText(weatherData);
       final clothingSuggestion = getClothingSuggestion(weatherData);
       final umbrellaAdvice = getUmbrellaAdvice(weatherData);
       
@@ -290,8 +290,8 @@ ${tags.isNotEmpty ? '标签: ${tags.join(', ')}' : ''}
     
     // 添加天气信息
     try {
-      final weatherData = await _weatherService.getWeather();
-      final weatherText = WeatherService.formatWeatherToText(weatherData);
+      final weatherData = await _weatherService.getRealTimeWeather();
+      final weatherText = WeatherService.formatForecastToText(weatherData);
       final clothingSuggestion = getClothingSuggestion(weatherData);
       final umbrellaAdvice = getUmbrellaAdvice(weatherData);
       
@@ -696,11 +696,8 @@ ${enhancedContent.length > 200 ? enhancedContent.substring(0, 200) + '...' : enh
       final weekdayNames = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日'];
       final weekday = weekdayNames[now.weekday - 1];
       
-      // 获取用户名
-      String userName = '同学';
-      if (userKnowledge != null && userKnowledge.containsKey('user_name')) {
-        userName = userKnowledge['user_name'];
-      }
+      // 获取用户名 (默认值)
+      String userName = (userKnowledge != null && userKnowledge.containsKey('user_name')) ? userKnowledge['user_name'] : '同学';
       
       // 生成时间相关问候
       String timeGreeting;
@@ -721,46 +718,38 @@ ${enhancedContent.length > 200 ? enhancedContent.substring(0, 200) + '...' : enh
         timeGreeting = "夜深了";
       }
       
-      // 构建基本问候语
+      // 构建基本问候语数据
       final Map<String, dynamic> greetingData = {
         'greeting': "$timeGreeting，$userName！",
         'date': "${dateFormat.format(now)} $weekday",
-        'timeOfDay': timeGreeting,
-        'userName': userName,
       };
       
-      // 添加天气信息
-      if (weatherData != null) {
-        try {
-          final weather = weatherData['forecast'][0]['weather'];
-          final tempDay = weatherData['forecast'][0]['tempDay'];
-          final tempNight = weatherData['forecast'][0]['tempNight'];
-          
-          greetingData['weather'] = {
-            'condition': weather,
-            'tempDay': tempDay,
-            'tempNight': tempNight,
-            'clothing': getClothingSuggestion(weatherData),
-            'umbrella': getUmbrellaAdvice(weatherData),
-          };
-        } catch (e) {
-          print('处理天气数据出错: $e');
-        }
-      }
+      // 添加天气信息 (使用默认值)
+      greetingData['weather'] = {
+        'condition': weatherData?['forecast']?[0]?['weather'] ?? '晴朗',
+        'tempDay': weatherData?['forecast']?[0]?['tempDay'] ?? '25',
+        'tempNight': weatherData?['forecast']?[0]?['tempNight'] ?? '15',
+        'clothing': weatherData != null ? getClothingSuggestion(weatherData) : "👕 今日穿衣建议: 温度适宜，建议穿着舒适的衣物。",
+        'umbrella': weatherData != null ? getUmbrellaAdvice(weatherData) : "☀️ 今日天气良好，无需带伞。",
+      };
       
-      // 添加今日课程信息
+      // 添加今日课程信息 (使用默认值)
+      List<Map<String, dynamic>> formattedEvents = [];
+      
       if (todayEvents != null && todayEvents.isNotEmpty) {
-        // 按时间排序
+        // 按时间排序并处理
         todayEvents.sort((a, b) => a.startTime.compareTo(b.startTime));
         
-        final formattedEvents = todayEvents.map((event) {
+        formattedEvents = todayEvents.map((event) {
           final eventData = {
             'title': event.title,
             'startTime': timeFormat.format(event.startTime),
             'endTime': timeFormat.format(event.endTime),
+            'location': '',
+            'teacher': '',
           };
           
-          // 提取地点信息
+          // 提取地点和教师信息
           if (event.notes.isNotEmpty) {
             final locationMatch = RegExp(r'地点: (.+?)(?:\n|$)').firstMatch(event.notes);
             if (locationMatch != null) {
@@ -769,51 +758,36 @@ ${enhancedContent.length > 200 ? enhancedContent.substring(0, 200) + '...' : enh
             
             final teacherMatch = RegExp(r'教师: (.+?)(?:\n|$)').firstMatch(event.notes);
             if (teacherMatch != null) {
-              eventData['teacher'] = teacherMatch.group(1) ?? '';
+              eventData['teacher'] = teacherMatch.group(1)!;
             }
           }
           
           return eventData;
         }).toList();
-        
-        greetingData['events'] = formattedEvents;
       }
       
-      // 添加个性化信息
-      greetingData['personal'] = {};
+      greetingData['events'] = formattedEvents;
       
-      if (userKnowledge != null) {
-        try {
-          // 如果知道用户专业
-          if (userKnowledge.containsKey('major')) {
-            final major = userKnowledge['major'];
-            greetingData['personal']['major'] = major;
-            
-            // 随机选择一条与专业相关的鼓励语
-            final majorEncouragements = [
-              "作为$major的学生，希望你今天的学习顺利！",
-              "$major的课程需要持续努力，加油！",
-              "今天也要在$major领域有所收获哦！"
-            ];
-            
-            greetingData['personal']['majorMessage'] = 
-                majorEncouragements[Random().nextInt(majorEncouragements.length)];
-          }
-          
-          // 如果知道用户兴趣
-          if (userKnowledge.containsKey('interests') && userKnowledge['interests'] is List) {
-            final interests = userKnowledge['interests'] as List;
-            if (interests.isNotEmpty) {
-              final interest = interests[Random().nextInt(interests.length)];
-              greetingData['personal']['interest'] = interest;
-              greetingData['personal']['interestMessage'] = 
-                  "记得抽时间享受一下你喜欢的$interest活动~";
-            }
-          }
-        } catch (e) {
-          print('处理用户知识出错: $e');
-        }
-      }
+      // 添加个性化信息 (使用默认值)
+      String major = (userKnowledge != null && userKnowledge.containsKey('major')) ? userKnowledge['major'] : '大学生';
+      List interests = (userKnowledge != null && userKnowledge.containsKey('interests') && userKnowledge['interests'] is List) ? 
+          userKnowledge['interests'] : ['学习', '运动', '音乐', '阅读'];
+      
+      // 随机选择一条与专业相关的鼓励语
+      final majorEncouragements = [
+        "作为$major的学生，希望你今天的学习顺利！",
+        "$major的课程需要持续努力，加油！",
+        "今天也要在$major领域有所收获哦！"
+      ];
+      
+      final interest = interests[Random().nextInt(interests.length)];
+      
+      greetingData['personal'] = {
+        'major': major,
+        'majorMessage': majorEncouragements[Random().nextInt(majorEncouragements.length)],
+        'interest': interest,
+        'interestMessage': "记得抽时间享受一下你喜欢的$interest活动~",
+      };
       
       // 添加勉励语
       final encouragements = [
@@ -837,73 +811,49 @@ ${enhancedContent.length > 200 ? enhancedContent.substring(0, 200) + '...' : enh
   static String renderGreetingContent(Map<String, dynamic> greetingData) {
     final buffer = StringBuffer();
     
-    // 添加问候标题 (使用大号字体样式)
-    buffer.writeln("┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓");
-    buffer.writeln("┃     ${greetingData['greeting']}     ┃");
-    buffer.writeln("┃     今天是 ${greetingData['date']}     ┃");
-    buffer.writeln("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛");
-    
-    // 添加分隔线
+    // 添加问候标题
+    buffer.writeln("${greetingData['greeting']}");
+    buffer.writeln("今天是 ${greetingData['date']}");
     buffer.writeln("");
     
     // 添加天气信息面板
-    if (greetingData.containsKey('weather')) {
-      final weather = greetingData['weather'];
-      buffer.writeln("┌─────── 今日天气 ───────┐");
-      buffer.writeln("│ 🌤️  ${weather['condition']}");
-      buffer.writeln("│ 🌡️  ${weather['tempNight']}°C ~ ${weather['tempDay']}°C");
-      buffer.writeln("│ ${weather['clothing']}");
-      buffer.writeln("│ ${weather['umbrella']}");
-      buffer.writeln("└────────────────────────┘");
-      buffer.writeln("");
-    }
+    final weather = greetingData['weather'];
+    buffer.writeln("今日天气 ");
+    buffer.writeln("🌤️  ${weather['condition']}");
+    buffer.writeln("🌡️  ${weather['tempNight']}°C ~ ${weather['tempDay']}°C");
+    buffer.writeln("${weather['clothing']}");
+    buffer.writeln("${weather['umbrella']}");
+    buffer.writeln("");
     
     // 添加今日课程信息面板
-    if (greetingData.containsKey('events')) {
-      final events = greetingData['events'] as List;
-      buffer.writeln("┌─────── 今日课程 ───────┐");
-      
-      if (events.isEmpty) {
-        buffer.writeln("│ 📅 今天没有安排课程");
-        buffer.writeln("│ 您可以好好休息或处理其他事务");
-      } else {
-        for (var i = 0; i < events.length; i++) {
-          final event = events[i];
-          buffer.writeln("│ ${i + 1}. ${event['title']} (${event['startTime']}-${event['endTime']})");
-          
-          if (event.containsKey('location')) {
-            buffer.writeln("│    📍 地点: ${event['location']}");
-          }
-          
-          if (event.containsKey('teacher')) {
-            buffer.writeln("│    👨‍🏫 教师: ${event['teacher']}");
-          }
-          
-          if (i < events.length - 1) {
-            buffer.writeln("│");
-          }
+    buffer.writeln("今日课程");
+    final events = greetingData['events'] as List;
+    
+    if (events.isEmpty) {
+      buffer.writeln("📅 今天没有安排课程");
+      buffer.writeln("您可以好好休息或处理其他事务");
+    } else {
+      for (var i = 0; i < events.length; i++) {
+        final event = events[i];
+        buffer.writeln("${i + 1}. ${event['title']} (${event['startTime']}-${event['endTime']})");
+        
+        if (event['location'].isNotEmpty) {
+          buffer.writeln("📍 地点: ${event['location']}");
+        }
+        
+        if (event['teacher'].isNotEmpty) {
+          buffer.writeln("👨‍🏫 教师: ${event['teacher']}");
         }
       }
-      
-      buffer.writeln("└────────────────────────┘");
-      buffer.writeln("");
     }
+    buffer.writeln("");
     
     // 添加个性化信息面板
-    if (greetingData['personal'] != null && greetingData['personal'].isNotEmpty) {
-      buffer.writeln("┌─────── 个性化提示 ───────┐");
-      
-      if (greetingData['personal'].containsKey('majorMessage')) {
-        buffer.writeln("│ 📚 ${greetingData['personal']['majorMessage']}");
-      }
-      
-      if (greetingData['personal'].containsKey('interestMessage')) {
-        buffer.writeln("│ 🎯 ${greetingData['personal']['interestMessage']}");
-      }
-      
-      buffer.writeln("│ 💪 ${greetingData['encouragement']}");
-      buffer.writeln("└────────────────────────┘");
-    }
+    buffer.writeln("个性化提示");
+    final personal = greetingData['personal'];
+    buffer.writeln("📚 ${personal['majorMessage']}");
+    buffer.writeln("🎯 ${personal['interestMessage']}");
+    buffer.writeln("💪 ${greetingData['encouragement']}");
     
     // 添加交互提示
     buffer.writeln("\n有什么我可以帮您的吗？");
