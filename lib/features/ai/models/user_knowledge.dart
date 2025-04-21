@@ -1,5 +1,6 @@
 // lib/features/ai/models/user_knowledge.dart
 import 'dart:convert';
+import 'package:StoneU_Hood/features/ai/services/llm_chat_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 用户知识库模型 - 用于AI助手存储和检索用户相关信息
@@ -68,6 +69,33 @@ class UserKnowledge {
   Future<bool> updateValues(Map<String, dynamic> values) async {
     _data.addAll(values);
     return await save();
+  }
+  
+  // 缓存问候语
+  Future<bool> cacheGreeting(String greeting) async {
+    final greetingData = {
+      'text': greeting,
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+    return await setValue('cached_greeting', greetingData);
+  }
+  
+  // 获取缓存的问候语，如果过期或不存在则返回null
+  Map<String, dynamic>? getCachedGreeting({Duration expiration = const Duration(hours: 6)}) {
+    if (!containsKey('cached_greeting')) return null;
+    
+    final greetingData = getValue('cached_greeting');
+    if (greetingData == null) return null;
+    
+    final timestamp = DateTime.parse(greetingData['timestamp']);
+    final now = DateTime.now();
+    
+    if (now.difference(timestamp) > expiration) {
+      // 问候语已过期
+      return null;
+    }
+    
+    return greetingData;
   }
 }
 
@@ -283,6 +311,158 @@ class UserKnowledgeService {
       timestamp: DateTime.now(),
     );
     await _memoryFlow.addMemory(memory);
+    
+    // 检查记忆流大小，超过阈值时触发知识提取
+    final size = await getMemoryFlowSize();
+    if (size > 25) {
+      await extractKnowledgeFromMemories();
+    }
+    
+    // 分析用户输入以提取关键信息
+    await _analyzeUserInput(userInput);
+  }
+  
+  // 分析用户输入以提取关键信息
+  Future<void> _analyzeUserInput(String userInput) async {
+    // 提取用户名
+    final nameRegex = RegExp(r'我(?:是|叫|的名字是)\s*([^\s,，。.!！?？]+)');
+    final nameMatch = nameRegex.firstMatch(userInput);
+    if (nameMatch != null && nameMatch.group(1) != null) {
+      final name = nameMatch.group(1)!;
+      await setValue('user_name', name);
+    }
+    
+    // 提取专业信息
+    final majorRegex = RegExp(r'我(?:学习|的专业是|是|读的是)\s*([^\s,，。.!！?？]+专业|[^\s,，。.!！?？]+系)');
+    final majorMatch = majorRegex.firstMatch(userInput);
+    if (majorMatch != null && majorMatch.group(1) != null) {
+      await setValue('major', majorMatch.group(1));
+    }
+    
+    // 提取年级信息
+    final gradeRegex = RegExp(r'(?:我是|我|读|上|在)(?:大学)?([一二三四五六七八九十\d]+年级|大[一二三四])');
+    final gradeMatch = gradeRegex.firstMatch(userInput);
+    if (gradeMatch != null && gradeMatch.group(1) != null) {
+      await setValue('grade', gradeMatch.group(1));
+    }
+  }
+  
+  // 缓存问候语
+  Future<bool> cacheGreeting(String greeting) async {
+    await _ensureInitialized();
+    return await _userKnowledge.cacheGreeting(greeting);
+  }
+  
+  // 获取缓存的问候语，如果过期或不存在则返回null
+  Future<Map<String, dynamic>?> getCachedGreeting({Duration expiration = const Duration(hours: 6)}) async {
+    await _ensureInitialized();
+    return _userKnowledge.getCachedGreeting(expiration: expiration);
+  }
+  
+  // 从记忆流中提取知识并存储到知识库
+  Future<void> extractKnowledgeFromMemories() async {
+    await _ensureInitialized();
+    
+    // 获取最近的记忆用于分析
+    final memories = await getRecentMemories(25);
+    if (memories.isEmpty) return;
+    
+    // 构建分析请求
+    final userInputs = memories
+        .where((m) => m.type == 'user_input')
+        .map((m) => m.content)
+        .join('\n');
+    
+    final aiResponses = memories
+        .where((m) => m.type == 'ai_response')
+        .map((m) => m.content)
+        .join('\n');
+    
+    if (userInputs.isEmpty) return;
+    
+    try {
+      // 调用LLM服务进行知识提取
+      final apiService = ApiService();
+      final extractionPrompt = """
+分析以下用户输入和AI响应，提取关于用户的关键信息:
+
+用户输入:
+$userInputs
+
+AI响应:
+$aiResponses
+
+从上述对话中提取用户信息，包括但不限于:
+- 姓名
+- 学校/专业/年级
+- 兴趣爱好
+- 家乡
+- 课程偏好
+- 学习习惯
+- 其他显著特征
+
+以JSON格式返回，例如:
+{
+  "user_name": "姓名",
+  "major": "专业",
+  "grade": "年级",
+  "interests": ["兴趣1", "兴趣2"],
+  "hometown": "家乡",
+  "favorite_subjects": ["科目1", "科目2"],
+  "preferred_study_time": "晚上"
+}
+如果无法确定某个字段，请不要在JSON中包含该字段。
+      """;
+      
+      final response = await apiService.sendChatRequest(
+        extractionPrompt,
+        previousMessages: [],
+      );
+      
+      final aiResponse = response['choices'][0]['message']['content'] as String;
+      
+      // 解析JSON响应
+      try {
+        // 提取JSON部分
+        String jsonStr = aiResponse;
+        if (aiResponse.contains('```json')) {
+          final jsonStartIndex = aiResponse.indexOf('```json') + 7;
+          final jsonEndIndex = aiResponse.lastIndexOf('```');
+          jsonStr = aiResponse.substring(jsonStartIndex, jsonEndIndex).trim();
+        }
+        
+        final extractedInfo = json.decode(jsonStr) as Map<String, dynamic>;
+        
+        // 更新知识库
+        for (final entry in extractedInfo.entries) {
+          if (entry.value != null) {
+            await setValue(entry.key, entry.value);
+          }
+        }
+        
+        // 记录提取的信息
+        final memory = MemoryItem(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          type: 'knowledge_extraction',
+          content: '从记忆流中提取用户信息',
+          timestamp: DateTime.now(),
+          metadata: {'extracted_info': extractedInfo},
+        );
+        await _memoryFlow.addMemory(memory);
+        
+        // 添加思考记录
+        await addAIThinking(
+          '已从用户记忆中提取信息并更新知识库: ${extractedInfo.keys.join(', ')}',
+        );
+        
+        // 触发记忆流总结
+        await summarizeMemories('已从过去的对话中提取用户信息，并更新知识库');
+      } catch (e) {
+        print('解析提取的知识出错: $e');
+      }
+    } catch (e) {
+      print('知识提取失败: $e');
+    }
   }
   
   // 添加AI响应到记忆流

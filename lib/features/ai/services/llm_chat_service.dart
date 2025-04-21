@@ -750,15 +750,14 @@ class ApiService {
 }
 ```
 
-5. 信息提取(仅在普通回复中使用):
-```json
-{
-  "memory_extraction": {
-    "key1": "value1",
-    "key2": "value2"
-  }
-}
-```
+5. 信息提取（使用关键词匹配）:
+在与用户对话时，请注意并提取以下类型的信息：
+- 用户姓名：关注"我叫..."、"我是..."、"我的名字是..."等表达
+- 专业信息：关注"我学的是..."、"我的专业是..."等表达
+- 兴趣爱好：关注"我喜欢..."、"我的爱好是..."等表达
+- 年级信息：关注"我是大一/大二..."等表达
+- 家乡信息：关注"我来自..."、"我的家乡是..."等表达
+提取到这些信息后，在对话中自然使用，无需特殊格式标记。
 
 6. 思考过程(仅在需要时使用):
 ```json
@@ -914,7 +913,6 @@ class _ChatScreenState extends State<ChatScreen> {
   int _currentTokens = 0;
   bool _isThresholdAlert = false;
 
-  // 保存消息历史以便发送到API
   List<Map<String, String>> _getMessageHistory() {
     return _messages
         .map(
@@ -929,16 +927,12 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    // 获取初始服务器状态
     _fetchServerStats();
-
-    // 定期刷新服务器状态
     Timer.periodic(Duration(minutes: 1), (timer) {
       _fetchServerStats();
     });
   }
 
-  // 获取服务器状态
   void _fetchServerStats() async {
     try {
       final stats = await _apiService.getServerStats();
@@ -952,15 +946,13 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  // 打开统计面板
   void _openStatsScreen() {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder:
-            (context) => ApiStatsScreen(
-              serverUrl: _apiService.baseUrl.replaceAll('/api', ''),
-            ),
+        builder: (context) => ApiStatsScreen(
+          serverUrl: _apiService.baseUrl.replaceAll('/api', ''),
+        ),
       ),
     );
   }
@@ -971,26 +963,19 @@ class _ChatScreenState extends State<ChatScreen> {
       appBar: AppBar(
         title: Text('AI 聊天'),
         actions: [
-          // 状态指示器
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Center(
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color:
-                      _isThresholdAlert
-                          ? Colors.orange[100]
-                          : Colors.green[100],
+                  color: _isThresholdAlert ? Colors.orange[100] : Colors.green[100],
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   '${_currentModel} (${_currentTokens} tokens)',
                   style: TextStyle(
-                    color:
-                        _isThresholdAlert
-                            ? Colors.deepOrange
-                            : Colors.green[800],
+                    color: _isThresholdAlert ? Colors.deepOrange : Colors.green[800],
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
@@ -1050,57 +1035,36 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _sendMessage() async {
     if (_messageController.text.trim().isEmpty) return;
-
     final userMessage = _messageController.text;
     setState(() {
       _messages.add(ChatMessage(message: userMessage, isUser: true));
       _isLoading = true;
       _messageController.clear();
     });
-
     try {
-      // 获取历史消息记录
       final messageHistory = _getMessageHistory();
-
-      // 移除最新添加的用户消息，因为它会在请求中单独添加
       if (messageHistory.isNotEmpty) {
         messageHistory.removeLast();
       }
-
       final response = await _apiService.sendChatRequest(
         userMessage,
-        previousMessages:
-            messageHistory.length > 6
-                ? messageHistory.sublist(messageHistory.length - 6) // 只保留最近6条消息
-                : messageHistory,
+        previousMessages: messageHistory.length > 6 ? messageHistory.sublist(messageHistory.length - 6) : messageHistory,
       );
-
-      // 根据API响应格式提取回复内容
       final aiResponse = response['choices'][0]['message']['content'] as String;
-
-      // 尝试解析JSON响应以处理可能的工具调用
+      // 只处理一次LLM决策，不再递归调用LLM
       try {
         final jsonResponse = jsonDecode(aiResponse);
-
-        // 检查是否包含action字段，表示需要执行某种操作
-        if (jsonResponse.containsKey('action')) {
+        if (jsonResponse is Map<String, dynamic> && jsonResponse.containsKey('action')) {
           final action = jsonResponse['action'];
           String toolResponse = "";
-
-          // 临时消息提示处理中
           setState(() {
-            _messages.add(
-              ChatMessage(message: "正在处理...", isUser: false, isTemporary: true),
-            );
+            _messages.add(ChatMessage(message: "正在处理...", isUser: false, isTemporary: true));
           });
-
           switch (action) {
-            // 日历事件操作
             case 'getNextWeekCourses':
               final courses = await AgentTools.getNextWeekCourses();
               toolResponse = AgentTools.formatCoursesInfo(courses);
               break;
-
             case 'getCoursesForDate':
               if (jsonResponse.containsKey('date')) {
                 try {
@@ -1114,27 +1078,18 @@ class _ChatScreenState extends State<ChatScreen> {
                 toolResponse = "缺少日期参数，无法查询课程信息。";
               }
               break;
-
             case 'listEventsForSelection':
               toolResponse = await AgentTools.listEventsForSelection();
               break;
-
             case 'addEvent':
-              if (jsonResponse.containsKey('title') &&
-                  jsonResponse.containsKey('startTime') &&
-                  jsonResponse.containsKey('endTime')) {
+              if (jsonResponse.containsKey('title') && jsonResponse.containsKey('startTime') && jsonResponse.containsKey('endTime')) {
                 try {
                   final title = jsonResponse['title'];
                   final startTime = DateTime.parse(jsonResponse['startTime']);
                   final endTime = DateTime.parse(jsonResponse['endTime']);
                   final notes = jsonResponse['notes'] ?? '';
                   final color = jsonResponse['color'] ?? '#FF2D55';
-                  final reminderMinutes =
-                      jsonResponse.containsKey('reminderMinutes') &&
-                              jsonResponse['reminderMinutes'] is List
-                          ? List<int>.from(jsonResponse['reminderMinutes'])
-                          : [20];
-
+                  final reminderMinutes = jsonResponse.containsKey('reminderMinutes') && jsonResponse['reminderMinutes'] is List ? List<int>.from(jsonResponse['reminderMinutes']) : [20];
                   toolResponse = await AgentTools.addEvent(
                     title: title,
                     startTime: startTime,
@@ -1150,7 +1105,6 @@ class _ChatScreenState extends State<ChatScreen> {
                 toolResponse = "缺少必要参数，无法添加课程。";
               }
               break;
-
             case 'deleteEvent':
               if (jsonResponse.containsKey('eventId')) {
                 final eventId = jsonResponse['eventId'];
@@ -1159,28 +1113,22 @@ class _ChatScreenState extends State<ChatScreen> {
                 toolResponse = "缺少事件ID，无法删除课程。";
               }
               break;
-
             case 'batchDeleteEvents':
-              if (jsonResponse.containsKey('eventIds') &&
-                  jsonResponse['eventIds'] is List) {
+              if (jsonResponse.containsKey('eventIds') && jsonResponse['eventIds'] is List) {
                 final eventIds = List<String>.from(jsonResponse['eventIds']);
                 toolResponse = await AgentTools.batchDeleteEvents(eventIds);
               } else {
                 toolResponse = "缺少事件ID列表，无法批量删除课程。";
               }
               break;
-
             case 'webSearch':
               if (jsonResponse.containsKey('query')) {
                 final query = jsonResponse['query'] as String;
                 try {
                   final searchResult = await _apiService.searchWeb(query);
-                  if (searchResult.containsKey('results') &&
-                      searchResult['results'] is List &&
-                      searchResult['results'].isNotEmpty) {
+                  if (searchResult.containsKey('results') && searchResult['results'] is List && searchResult['results'].isNotEmpty) {
                     final results = searchResult['results'] as List;
                     toolResponse = "搜索\"$query\"的结果:\n\n";
-
                     for (var i = 0; i < results.length && i < 3; i++) {
                       final result = results[i] as Map<String, dynamic>;
                       final title = result['title'] as String? ?? '未知标题';
@@ -1197,67 +1145,28 @@ class _ChatScreenState extends State<ChatScreen> {
                 toolResponse = "缺少搜索关键词，无法执行搜索";
               }
               break;
-
             default:
-              // 默认将JSON响应显示为普通消息
-              setState(() {
-                // 移除临时消息
-                _messages.removeWhere((msg) => msg.isTemporary);
-
-                _messages.add(ChatMessage(message: aiResponse, isUser: false));
-                _isLoading = false;
-              });
-              return;
+              toolResponse = "暂不支持的操作类型: $action";
           }
-
-          // 显示工具操作结果
           setState(() {
-            // 移除临时消息
             _messages.removeWhere((msg) => msg.isTemporary);
-
             _messages.add(ChatMessage(message: toolResponse, isUser: false));
             _isLoading = false;
           });
-
-          // 更新服务器状态
           _fetchServerStats();
-
-          // 将工具响应发送回LLM进行链式反应处理
-          final chainResponse = await _apiService.sendChatRequest(
-            userMessage,
-            previousMessages: messageHistory,
-            toolResponse: toolResponse,
-            toolAction: action,
-          );
-
-          // 根据API响应格式提取回复内容
-          final chainAiResponse =
-              chainResponse['choices'][0]['message']['content'] as String;
-
-          setState(() {
-            _messages.add(ChatMessage(message: chainAiResponse, isUser: false));
-          });
-
-          return; // 已处理JSON指令，直接返回
+          return;
         }
       } catch (e) {
-        // JSON解析失败，按普通文本处理
-        print('解析LLM响应失败: $e');
+        // 不是JSON或无action，按普通文本回复
       }
-
-      // 如果不是JSON或没有识别的action，则作为普通回复显示
       setState(() {
         _messages.add(ChatMessage(message: aiResponse, isUser: false));
         _isLoading = false;
       });
-
-      // 更新服务器状态
       _fetchServerStats();
     } catch (e) {
       setState(() {
-        _messages.add(
-          ChatMessage(message: '发生错误: $e', isUser: false, isError: true),
-        );
+        _messages.add(ChatMessage(message: '发生错误: $e', isUser: false, isError: true));
         _isLoading = false;
       });
     }
