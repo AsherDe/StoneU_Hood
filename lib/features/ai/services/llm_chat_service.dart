@@ -3,8 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../../calendar/services/event_repository.dart';
 import '../../calendar/models/event.dart';
+import '../../community/providers/user_awareness_provider.dart';
+import '../../community/models/user_activity.dart';
 import 'llm_status.dart';
 
 class AgentTools {
@@ -912,6 +915,12 @@ class _ChatScreenState extends State<ChatScreen> {
   String _currentModel = "未知";
   int _currentTokens = 0;
   bool _isThresholdAlert = false;
+  
+  // Subscription to important state changes
+  StreamSubscription<UserActivity>? _activitySubscription;
+  
+  // Timer for processing unprocessed memories periodically
+  Timer? _memoryProcessingTimer;
 
   List<Map<String, String>> _getMessageHistory() {
     return _messages
@@ -928,9 +937,130 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     _fetchServerStats();
+    
+    // Set up periodic stats fetching
     Timer.periodic(Duration(minutes: 1), (timer) {
       _fetchServerStats();
     });
+    
+    // Listen to important state changes from UserAwarenessProvider
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final awarenessProvider = Provider.of<UserAwarenessProvider>(context, listen: false);
+      
+      // Subscribe to important state changes
+      _activitySubscription = awarenessProvider.importantStateChanges.listen((activity) {
+        // Respond proactively to high-priority state changes
+        _handleImportantActivity(activity);
+      });
+      
+      // Set up periodic memory processing
+      _memoryProcessingTimer = Timer.periodic(Duration(minutes: 5), (timer) {
+        awarenessProvider.processMemories();
+      });
+    });
+  }
+  
+  @override
+  void dispose() {
+    _activitySubscription?.cancel();
+    _memoryProcessingTimer?.cancel();
+    super.dispose();
+  }
+  
+  /// Handle important user activities that require proactive AI responses
+  void _handleImportantActivity(UserActivity activity) async {
+    final awarenessProvider = Provider.of<UserAwarenessProvider>(context, listen: false);
+    
+    switch (activity.type) {
+      case ActivityType.upcomingEvent:
+        // Example: Proactively remind about upcoming events
+        final response = await _getAIResponse(
+          "提醒用户即将到来的事件: ${activity.description}",
+          isSystemPrompt: true,
+          includeUserContext: true,
+        );
+        setState(() {
+          _messages.add(ChatMessage(
+            message: response,
+            isUser: false,
+            isProactive: true,
+          ));
+        });
+        break;
+        
+      case ActivityType.error:
+        // Example: Help with errors
+        final response = await _getAIResponse(
+          "用户遇到以下错误，请提供帮助: ${activity.description}",
+          isSystemPrompt: true,
+          includeUserContext: true,
+        );
+        setState(() {
+          _messages.add(ChatMessage(
+            message: response,
+            isUser: false,
+            isProactive: true,
+          ));
+        });
+        break;
+        
+      case ActivityType.alarm:
+        // Example: Important reminder
+        setState(() {
+          _messages.add(ChatMessage(
+            message: "提醒: ${activity.description}",
+            isUser: false,
+            isProactive: true,
+          ));
+        });
+        break;
+        
+      default:
+        // Other important activities might be handled here
+        break;
+    }
+  }
+  
+  /// Get a response from the AI with optional system prompt and user context
+  Future<String> _getAIResponse(String prompt, {
+    bool isSystemPrompt = false,
+    bool includeUserContext = false,
+  }) async {
+    try {
+      final messageHistory = _getMessageHistory();
+      
+      // If including user context, get it from the awareness provider
+      String? additionalContext;
+      Map<String, dynamic>? knowledge;
+      
+      if (includeUserContext) {
+        final awarenessProvider = Provider.of<UserAwarenessProvider>(context, listen: false);
+        additionalContext = awarenessProvider.getActivitySummary();
+        knowledge = awarenessProvider.userKnowledge;
+      }
+      
+      // Convert system prompts to special format
+      final List<Map<String, String>> messages = [];
+      if (isSystemPrompt) {
+        messages.add({'role': 'system', 'content': prompt});
+      } else {
+        messages.add({'role': 'user', 'content': prompt});
+      }
+      
+      final response = await _apiService.sendChatRequest(
+        isSystemPrompt ? "请根据上下文回复用户" : prompt,
+        previousMessages: [...(messageHistory.length > 6 
+            ? messageHistory.sublist(messageHistory.length - 6) 
+            : messageHistory),
+          ...messages],
+        additionalContext: additionalContext,
+        userKnowledge: knowledge,
+      );
+      
+      return response['choices'][0]['message']['content'] as String;
+    } catch (e) {
+      return "获取AI响应时出错: $e";
+    }
   }
 
   void _fetchServerStats() async {
@@ -1041,25 +1171,67 @@ class _ChatScreenState extends State<ChatScreen> {
       _isLoading = true;
       _messageController.clear();
     });
+    
+    // Track this user activity
+    final awarenessProvider = Provider.of<UserAwarenessProvider>(context, listen: false);
+    await awarenessProvider.addUserActivity(
+      UserActivity(
+        type: ActivityType.conversation,
+        description: userMessage,
+        timestamp: DateTime.now(),
+      ),
+    );
+    
     try {
       final messageHistory = _getMessageHistory();
       if (messageHistory.isNotEmpty) {
         messageHistory.removeLast();
       }
+      
+      // Get personalization hints and activity context
+      final activitySummary = awarenessProvider.getActivitySummary();
+      final userKnowledge = awarenessProvider.userKnowledge;
+      final personalizationHints = awarenessProvider.getPersonalizationHints();
+      
+      // Combined context
+      final additionalContext = '''
+${activitySummary}
+
+${personalizationHints}
+      ''';
+      
       final response = await _apiService.sendChatRequest(
         userMessage,
-        previousMessages: messageHistory.length > 6 ? messageHistory.sublist(messageHistory.length - 6) : messageHistory,
+        previousMessages: messageHistory.length > 6 
+            ? messageHistory.sublist(messageHistory.length - 6) 
+            : messageHistory,
+        additionalContext: additionalContext,
+        userKnowledge: userKnowledge,
       );
+      
       final aiResponse = response['choices'][0]['message']['content'] as String;
-      // 只处理一次LLM决策，不再递归调用LLM
+      
+      // Only process once
       try {
         final jsonResponse = jsonDecode(aiResponse);
         if (jsonResponse is Map<String, dynamic> && jsonResponse.containsKey('action')) {
           final action = jsonResponse['action'];
           String toolResponse = "";
           setState(() {
+            _messages.removeWhere((msg) => msg.isTemporary);
             _messages.add(ChatMessage(message: "正在处理...", isUser: false, isTemporary: true));
           });
+          
+          // Track tool usage activity
+          await awarenessProvider.addUserActivity(
+            UserActivity(
+              type: ActivityType.other,
+              description: "使用工具: $action",
+              metadata: {'tool': action},
+              timestamp: DateTime.now(),
+            ),
+          );
+          
           switch (action) {
             case 'getNextWeekCourses':
               final courses = await AgentTools.getNextWeekCourses();
@@ -1157,14 +1329,24 @@ class _ChatScreenState extends State<ChatScreen> {
           return;
         }
       } catch (e) {
-        // 不是JSON或无action，按普通文本回复
+        // Not JSON or no action, reply as regular text
       }
+      
       setState(() {
         _messages.add(ChatMessage(message: aiResponse, isUser: false));
         _isLoading = false;
       });
       _fetchServerStats();
     } catch (e) {
+      // Track error activity
+      awarenessProvider.addUserActivity(
+        UserActivity(
+          type: ActivityType.error,
+          description: "AI响应错误: $e",
+          timestamp: DateTime.now(),
+        ),
+      );
+      
       setState(() {
         _messages.add(ChatMessage(message: '发生错误: $e', isUser: false, isError: true));
         _isLoading = false;
@@ -1178,12 +1360,14 @@ class ChatMessage extends StatelessWidget {
   final bool isUser;
   final bool isError;
   final bool isTemporary;
+  final bool isProactive;  // New property for proactive AI messages
 
   const ChatMessage({
     required this.message,
     required this.isUser,
     this.isError = false,
     this.isTemporary = false,
+    this.isProactive = false,  // Default is false
   });
 
   @override
@@ -1197,9 +1381,13 @@ class ChatMessage extends StatelessWidget {
         children: [
           if (!isUser)
             CircleAvatar(
-              backgroundColor: isError ? Colors.red : Colors.blue,
+              backgroundColor: isError 
+                  ? Colors.red 
+                  : (isProactive ? Colors.purple : Colors.blue),
               child: Icon(
-                isError ? Icons.error : Icons.smart_toy,
+                isError 
+                    ? Icons.error 
+                    : (isProactive ? Icons.notification_important : Icons.smart_toy),
                 color: Colors.white,
               ),
             ),
@@ -1208,11 +1396,16 @@ class ChatMessage extends StatelessWidget {
             child: Container(
               padding: EdgeInsets.all(12.0),
               decoration: BoxDecoration(
-                color:
-                    isUser
-                        ? Colors.blue[100]
-                        : (isError ? Colors.red[100] : Colors.grey[200]),
+                color: isUser
+                    ? Colors.blue[100]
+                    : (isError 
+                        ? Colors.red[100] 
+                        : (isProactive ? Colors.purple[50] : Colors.grey[200])),
                 borderRadius: BorderRadius.circular(8.0),
+                // Add a special border for proactive messages
+                border: isProactive 
+                    ? Border.all(color: Colors.purple, width: 1.0) 
+                    : null,
               ),
               child: Text(message),
             ),
