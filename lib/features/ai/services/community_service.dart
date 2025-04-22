@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/post.dart';
 
 class CommunityService {
-  static const String baseUrl = 'http://stoneu.uend.top:8081/api';
+  static const String baseUrl = 'http://stoneu.uend.top:8080/api';
   
   // 获取最新帖子列表
   Future<List<Post>> getRecentPosts({int limit = 5}) async {

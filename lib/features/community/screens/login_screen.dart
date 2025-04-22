@@ -182,35 +182,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: _isLoading ? null : _sendOtp,
                         child: Text('重新发送验证码'),
                       ),
-                    
-                    // 评委专用跳过按钮
-                    Divider(height: 30),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text('评委专用: ', style: TextStyle(color: Colors.grey)),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.of(context).pushReplacement(
-                              MaterialPageRoute(builder: (_) => HomeScreen())
-                            );
-                          },
-                          child: Text('直接进入应用', 
-                            style: TextStyle(
-                              color: Colors.blue,
-                              fontWeight: FontWeight.bold,
-                            )
-                          ),
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            backgroundColor: Colors.blue.withOpacity(0.1),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
                   ],
                 ),
               ),

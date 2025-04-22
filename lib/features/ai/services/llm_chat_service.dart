@@ -647,7 +647,7 @@ class AgentTools {
 
 class ApiService {
   // 替换为你的后端API地址
-  final String baseUrl = 'http://127.0.0.1:8081/api';
+  final String baseUrl = 'http://stoneu.uend.top:8081/api';
 
   // 发送聊天请求到你的后端服务器
   Future<Map<String, dynamic>> sendChatRequest(
@@ -969,7 +969,6 @@ class _ChatScreenState extends State<ChatScreen> {
   
   /// Handle important user activities that require proactive AI responses
   void _handleImportantActivity(UserActivity activity) async {
-    final awarenessProvider = Provider.of<UserAwarenessProvider>(context, listen: false);
     
     switch (activity.type) {
       case ActivityType.upcomingEvent:

@@ -57,12 +57,6 @@ class AuthProvider with ChangeNotifier {
 
   // 发送OTP前先检查timetable验证
   Future<bool> sendOtp(String phone, String sceneId) async {
-    // 先检查timetable验证状态
-    // bool isTimetableVerified = await _authService.isTimetableVerified();
-    // if (!isTimetableVerified) {
-    //   throw Exception('请先通过课表验证身份');
-    // }
-
     _isLoading = true;
     notifyListeners();
 

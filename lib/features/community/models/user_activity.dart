@@ -1,5 +1,4 @@
 // lib/features/community/models/user_activity.dart
-import 'package:flutter/foundation.dart';
 
 /// Represents a user activity or state change in the application
 class UserActivity {
